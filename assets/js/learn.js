@@ -76,6 +76,7 @@
     },
   });
 
+
   S.learnData = { get: () => L, STYLES, nextUnit, byId, COURSES };
   if (!C) return; // the rest runs inside the chat only
 
@@ -84,7 +85,7 @@
   // English inside Hebrew text: keep each English run left-to-right
   const rich = S.rich; // English runs and math stay left-to-right inside Hebrew
   const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
-  const canLLM = () => local.state === 'ok' || local.state === 'busy';
+  const canLLM = () => S.ai.ready(); // Claude through the local server, or the local model
   const kick = (c, u, extra) => '<div class="lx-kick">' + icon(c.icon) + '<span>' + esc(c.title) + (u ? ' · יחידה ' + u + ' מתוך 5' : '') + (extra ? ' · ' + esc(extra) : '') + '</span></div>';
   function lock(row, chosen) {
     $$('button', row).forEach((b) => { b.disabled = true; if (chosen && b !== chosen) b.classList.add('dim'); });
@@ -121,8 +122,32 @@
     'אל תכתוב כותרות, רשימות ממוספרות או סימני Markdown. שמור על דיוק עובדתי, ואל תוסיף עובדות שלא הופיעו בחומר.';
   async function teach(prompt, max) {
     const prof = A.profileText();
-    return local.llm({ system: TEACH + ' ' + S.kb.addrRule(A.mem.get('addr', 'n')) + (prof ? '\n\n' + prof : ''), messages: [{ role: 'user', content: prompt }], maxLength: max || 380, temperature: .35 });
+    return S.ai.complete({ system: [TEACH + ' ' + S.kb.addrRule(A.mem.get('addr', 'n')), prof], messages: [{ role: 'user', content: prompt }], maxTokens: max ? max * 2 : 700, temperature: .35 });
   }
+
+  /* ---------- Duolingo-style pieces: a coach that reacts, gentle sounds, a progress bar, a combo ---------- */
+  const coachHTML = () => '<div class="coach" aria-hidden="true">' + A.owlHTML('coach-owl', 'data-coach') + '</div>';
+  let actx = null;
+  function sfx(kind) {
+    if (A.mem.get('sound', true) === false) return;
+    try {
+      actx = actx || new (window.AudioContext || window.webkitAudioContext)();
+      const t0 = actx.currentTime + .01;
+      const seq = { ok: [[784, 0], [1175, .08]], bad: [[247, 0], [196, .11]], win: [[659, 0], [784, .09], [988, .18], [1319, .27]], tap: [[620, 0]] }[kind] || [];
+      seq.forEach(([fq, t]) => {
+        const o = actx.createOscillator(), gn = actx.createGain();
+        o.type = kind === 'bad' ? 'triangle' : 'sine'; o.frequency.value = fq;
+        gn.gain.setValueAtTime(0, t0 + t);
+        gn.gain.linearRampToValueAtTime(kind === 'tap' ? .035 : .07, t0 + t + .012);
+        gn.gain.exponentialRampToValueAtTime(.0001, t0 + t + (kind === 'win' ? .38 : .24));
+        o.connect(gn); gn.connect(actx.destination); o.start(t0 + t); o.stop(t0 + t + .42);
+      });
+    } catch { /* no audio here */ }
+  }
+  S.sfx = sfx;
+  let combo = 0;
+  const progHTML = (pr) => (pr ? '<div class="lx-prog" aria-label="שאלה ' + (pr.i + 1) + ' מתוך ' + pr.n + '">' +
+    Array.from({ length: pr.n }, (_, k) => '<i class="' + (k < pr.i ? 'done' : k === pr.i ? 'now' : '') + '"></i>').join('') + '</div>' : '');
 
   /* ---------- a multiple-choice question card ---------- */
   function askMCQ(o) {
@@ -130,12 +155,13 @@
       const opts = shuffle(o.o.map((t, i) => ({ t, ok: i === 0 })));
       if (o.skip) opts.push({ t: 'לא יודע/ת', ok: false, skip: true });
       const timed = o.time && !S.reduced();
-      const row = C.card('<div class="lx-card lx-q">' + o.kicker + (o.hud || '') +
+      const row = C.card('<div class="lx-card lx-q">' + o.kicker + progHTML(o.prog) + (o.hud || '') +
         (o.time ? '<div class="lx-timer"><i style="animation-duration:' + o.time + 's"></i></div>' : '') +
-        '<h3 class="lx-qt">' + rich(o.q) + '</h3><div class="lx-opts">' +
+        '<div class="lx-ask">' + coachHTML() + '<h3 class="lx-qt">' + rich(o.q) + '</h3></div><div class="lx-opts">' +
         opts.map((x, i) => '<button class="lx-opt' + (x.skip ? ' lx-skip' : '') + '" type="button" data-n="' + i + '"><span class="lx-l">' + (x.skip ? '?' : LET[i]) + '</span><span class="lx-t">' + rich(x.t) + '</span></button>').join('') +
         '</div></div>');
       const card = $('.lx-card', row);
+      S.owlLive($('[data-coach]', row));
       let done = false, timer = null;
       function finish(n) {
         if (done || !row.isConnected) return; done = true;
@@ -149,13 +175,36 @@
         });
         const bar = $('.lx-timer', row); if (bar) bar.classList.add('stop');
         const ok = !!(pick && pick.ok);
-        if (!o.hideAnswer) { L.stats.answers++; if (ok) L.stats.correct++; }
-        if (o.e && !o.hideAnswer) card.insertAdjacentHTML('beforeend', '<p class="lx-exp ' + (ok ? 'good' : 'miss') + '">' + icon(ok ? 'check' : 'alert') + '<span><b>' + (ok ? oneOf(PRAISE) : n < 0 ? 'נגמר הזמן.' : oneOf(MISS)) + '</b> ' + rich(o.e) + '</span></p>');
-        if (o.pts && ok) card.insertAdjacentHTML('beforeend', '<span class="lx-pop">+' + o.pts() + ' XP</span>');
+        const sum = '[' + (o.label || 'שאלה') + ': ' + o.q + ' | ' + (pick ? 'בחר: ' + pick.t : 'לא ענה בזמן') + (o.hideAnswer ? '' : ' | ' + (ok ? 'נכון' : 'לא נכון')) + ']';
+        if (o.hideAnswer) { // placement: no right/wrong yet, just move on
+          sfx('tap'); hydrateIcons(card); C.persist(row, sum);
+          resolve({ ok, timedOut: n < 0, skip: !!(pick && pick.skip) });
+          return;
+        }
+        L.stats.answers++; if (ok) L.stats.correct++;
+        combo = ok ? combo + 1 : 0;
+        card.classList.add(ok ? 'react-ok' : 'react-bad');
+        sfx(ok ? 'ok' : 'bad');
+        const title = ok ? oneOf(PRAISE) : n < 0 ? 'נגמר הזמן' : oneOf(MISS);
+        card.insertAdjacentHTML('beforeend', '<div class="lx-fb ' + (ok ? 'good' : 'miss') + '"><div class="lx-fb-t">' + icon(ok ? 'check' : 'x') + '<b>' + title + '</b>' +
+          (ok && combo >= 3 ? '<span class="lx-combo">' + icon('flame') + combo + ' ברצף</span>' : '') +
+          (o.pts && ok ? '<span class="lx-fb-xp">+' + o.pts() + ' XP</span>' : '') + '</div>' +
+          (o.e ? '<p>' + rich(o.e) + '</p>' : '') +
+          '<button class="lx-btn lx-next" type="button" data-next>המשך' + icon('arrowL') + '</button></div>');
         hydrateIcons(card);
-        if (C.atBottom() || row === C.log.lastElementChild) C.toBottom();
-        C.persist(row, '[' + (o.label || 'שאלה') + ': ' + o.q + ' | ' + (pick ? 'בחר: ' + pick.t : 'לא ענה בזמן') + (o.hideAnswer ? '' : ' | ' + (ok ? 'נכון' : 'לא נכון')) + ']');
-        resolve({ ok, timedOut: n < 0, skip: !!(pick && pick.skip) });
+        C.toBottom();
+        C.persist(row, sum);
+        const next = $('[data-next]', card);
+        let gone = false;
+        const go = () => {
+          if (gone) return; gone = true;
+          if (next.isConnected) next.remove();
+          C.persist(row, sum);
+          resolve({ ok, timedOut: n < 0, skip: false });
+        };
+        next.addEventListener('click', go);
+        if (o.auto) { const t = setTimeout(go, o.auto); timers.add(t); }
+        if (!matchMedia('(pointer: coarse)').matches) next.focus({ preventScroll: true });
       }
       row.addEventListener('click', (e) => { const b = e.target.closest('.lx-opt'); if (b && !b.disabled) finish(+b.dataset.n); });
       if (timed) { timer = setTimeout(() => finish(-1), o.time * 1000); timers.add(timer); }
@@ -206,7 +255,7 @@
     for (let i = s.pAns.length; i < 5; i++) {
       if (!alive(f)) return;
       const p = c.placement[i];
-      const r = await askMCQ({ kicker: kick(c, 0, 'מבחן רמה · שאלה ' + (i + 1) + ' מתוך 5'), q: p.q, o: p.o, skip: true, hideAnswer: true, label: 'מבחן רמה' });
+      const r = await askMCQ({ kicker: kick(c, 0, 'מבחן רמה · שאלה ' + (i + 1) + ' מתוך 5'), q: p.q, o: p.o, skip: true, hideAnswer: true, label: 'מבחן רמה', prog: { i, n: 5 } });
       if (!alive(f)) return;
       s.pAns.push(r.ok ? 1 : 0); save();
       await sleep(260);
@@ -222,7 +271,7 @@
       '<div class="lx-score"><b>' + score + '<small>/5</small></b><span>רמה: <strong>' + esc(s.level) + '</strong></span></div>' +
       mapHTML(c, s, s.unit) + '</div>');
     C.persist(row, '[מבחן רמה ב' + c.title + ': ' + score + ' מתוך 5, רמה ' + s.level + ', מתחילים מיחידה ' + s.unit + ']');
-    if (score >= 3) confetti(row);
+    if (score >= 3) { confetti(row); sfx('win'); }
     chips();
     await C.say(s.known.length
       ? 'יפה. יחידות 1' + (s.known.length > 1 ? '–' + s.known.length : '') + ' כבר מוכרות לך, אז נתחיל מיחידה ' + s.unit + ': ' + c.units[s.unit - 1].t + '. אפשר לחזור ליחידות הקודמות בכל רגע.'
@@ -327,11 +376,11 @@
     const c = byId(id), s = cs(id), pos = s.pos;
     for (let i = pos.qi || 0; i < list.length; i++) {
       if (!alive(f)) return null;
-      const r = await askMCQ({ kicker: kick(c, u, (label || 'שאלה') + ' ' + (i + 1) + ' מתוך ' + list.length), q: list[i].q, o: list[i].o, e: list[i].e, pts: () => 10 });
+      const r = await askMCQ({ kicker: kick(c, u, label || 'תרגול'), prog: { i, n: list.length }, q: list[i].q, o: list[i].o, e: list[i].e, pts: () => 10 });
       if (!alive(f)) return null;
       if (r.ok) { pos.score = (pos.score || 0) + 1; addXP(10); }
       pos.qi = i + 1; save();
-      await sleep(420);
+      await sleep(120);
     }
     return pos.score >= Math.ceil(list.length * 2 / 3);
   }
@@ -353,19 +402,19 @@
     for (let i = pos.qi || 0; i < pool.length; i++) {
       if (!alive(f)) return null;
       const pts = () => 10 + Math.max(0, g.streak) * 5;
-      const r = await askMCQ({ kicker: kick(c, u, 'משחק'), hud: hudHTML(g, i, pool.length), q: pool[i].q, o: pool[i].o, e: pool[i].e, time: GAME_SECONDS, pts, label: 'משחק' });
+      const r = await askMCQ({ kicker: kick(c, u, 'משחק'), prog: { i, n: pool.length }, hud: hudHTML(g, i, pool.length), q: pool[i].q, o: pool[i].o, e: pool[i].e, time: GAME_SECONDS, pts, label: 'משחק', auto: 1600 });
       if (!alive(f)) return null;
       if (r.ok) { const p = pts(); g.streak++; g.best = Math.max(g.best, g.streak); g.xp += p; g.right++; addXP(p); }
       else { g.streak = 0; g.hearts--; }
       pos.qi = i + 1; save();
       if (g.hearts <= 0) break;
-      await sleep(650);
+      await sleep(120);
     }
     const won = g.hearts > 0 && g.right >= Math.ceil(pool.length * .6);
     const row = C.card('<div class="lx-card lx-result ' + (won ? 'win' : '') + '">' + kick(c, u, 'סוף המשחק') +
       '<div class="lx-score"><b>' + g.xp + '<small> XP</small></b><span>' + g.right + ' מתוך ' + pool.length + ' נכונות · רצף שיא ' + g.best + ' · ' + g.hearts + ' לבבות</span></div></div>');
     C.persist(row, '[משחק ביחידה ' + u + ': ' + g.right + ' מתוך ' + pool.length + ', ' + g.xp + ' XP]');
-    L.stats.games++; if (won) { L.stats.wins++; confetti(row); } save();
+    L.stats.games++; if (won) { L.stats.wins++; confetti(row); sfx('win'); } save();
     return won;
   }
 
@@ -437,7 +486,7 @@
       if (s.finished) return finished(id, f);
       const row = C.card('<div class="lx-card lx-result win">' + kick(c, u, 'הושלמה') + '<div class="lx-score"><b>' + icon('check') + '</b><span>יחידה ' + u + ' הושלמה. ' + s.done.length + ' מתוך 5 בקורס.</span></div>' + mapHTML(c, s, nu) +
         '<div class="lx-actions"><button class="lx-btn" type="button" data-next>' + icon('play') + 'ליחידה ' + nu + '</button><button class="lx-ghost" type="button" data-pause>הפסקה, נמשיך אחר כך</button></div></div>');
-      confetti(row);
+      confetti(row); sfx('win');
       const k = await new Promise((res) => row.addEventListener('click', (e) => { const b = e.target.closest('[data-next],[data-pause]'); if (b && !b.disabled) { lock(row, b); res(b.hasAttribute('data-next')); } }));
       if (!alive(f)) return;
       C.persist(row, '[יחידה ' + u + ' הושלמה]');
@@ -466,7 +515,7 @@
     const row = C.card('<div class="lx-card lx-result win lx-done-course">' + kick(c, 0, 'סיום') +
       '<div class="lx-score"><b>' + icon('trophy') + '</b><span>סיימת את ' + esc(c.title) + '! ' + (L.xp || 0) + ' XP בסך הכל.</span></div>' + mapHTML(c, s, 0) +
       '<div class="lx-actions"><button class="lx-btn" type="button" data-more>' + icon('book') + 'קורס נוסף</button><button class="lx-ghost" type="button" data-review>' + icon('refresh') + 'חזרה על הקורס מההתחלה</button></div></div>');
-    confetti(row);
+    confetti(row); sfx('win');
     const k = await new Promise((res) => row.addEventListener('click', (e) => { const b = e.target.closest('[data-more],[data-review]'); if (b && !b.disabled) { lock(row, b); res(b.hasAttribute('data-more')); } }));
     if (!alive(f)) return;
     C.persist(row, '[סיים את הקורס ' + c.title + ']');
@@ -512,7 +561,7 @@
         if (k === 'courses') openCourses();
         if (k === 'resume') resume();
         if (k === 'style' && L.active) pickStyle(L.active);
-        if (k === 'memory') A.openPanel();
+        if (k === 'settings') A.openPanel();
         if (k === 'cancel') { C.cancelWait(); toast('בוטל. אפשר להמשיך מהכפתור "המשך".', 'info'); }
       });
       document.addEventListener('shachar:wait', (e) => { const x = $('[data-c="cancel"]', bar); if (x) x.hidden = !e.detail; });
@@ -521,22 +570,30 @@
     const st = act && cs(act.id).style;
     bar.innerHTML =
       '<button type="button" data-c="courses">' + icon('book') + '<span>קורסים</span></button>' +
-      (act ? '<button type="button" data-c="resume" class="hot">' + icon('play') + '<span>המשך · ' + esc(act.short) + '</span></button>' : '') +
-      (act && cs(act.id).placed ? '<button type="button" data-c="style">' + icon(st ? STYLES[st].i : 'sparkle') + '<span>סגנון' + (st ? ': ' + STYLES[st].t : '') + '</span></button>' : '') +
-      '<button type="button" data-c="memory">' + icon('brain') + '<span>הזיכרון שלי</span></button>' +
+      (act ? '<button type="button" data-c="resume" class="hot">' + icon('play') + '<span>המשך<em class="cn"> · ' + esc(act.short) + '</em></span></button>' : '') +
+      (act && cs(act.id).placed ? '<button type="button" data-c="style" aria-label="' + esc('סגנון: ' + (st ? STYLES[st].t : 'בחירה')) + '">' + icon(st ? STYLES[st].i : 'sparkle') + '<span>' + (st ? STYLES[st].t : 'סגנון') + '</span></button>' : '') +
+      '<button type="button" data-c="settings">' + icon('gear') + '<span>הגדרות</span></button>' +
       '<button type="button" data-c="cancel" class="cancel"' + (C.waiting ? '' : ' hidden') + '>' + icon('x') + '<span>ביטול</span></button>';
   }
 
-  /* ---------- the empty chat: greet and offer learning ---------- */
+  /* ---------- the empty chat: the courses, right away ---------- */
   function hello(h) {
-    const p = $('p', h);
+    const p = $('h1 + p', h) || $('p:last-of-type', h);
     const act = activeOpen() ? byId(L.active) : null;
+    const fresh = COURSES.find((c) => !L.courses[c.id] || !(L.courses[c.id].placed || L.courses[c.id].pAns.length));
+    const rec = act ? act.id : (fresh || COURSES[0]).id;
     const box = document.createElement('div');
-    box.className = 'hello-learn';
-    box.innerHTML = (act ? '<button type="button" class="hl hot" data-h="resume">' + icon('play') + '<span><b>להמשיך: ' + esc(act.title) + '</b><small>' + esc(resumeLine(act.id)) + '</small></span></button>' : '') +
-      '<button type="button" class="hl" data-h="courses">' + icon('cap') + '<span><b>' + (act ? 'כל הקורסים' : 'ללמוד עם שחר') + '</b><small>' + (act ? 'סטטיסטיקה, כתיבה אקדמית ואנגלית' : 'מבחן רמה קצר, ואז לומדים בסגנון שלך') + '</small></span></button>';
+    box.className = 'hello-courses';
+    box.innerHTML = COURSES.map((c) => {
+      const st = L.courses[c.id], n = st ? st.done.length : 0;
+      const line = !st || !(st.placed || st.pAns.length) ? 'מבחן רמה קצר ומתחילים' : st.finished ? 'הושלם · חזרה' : st.placed ? 'יחידה ' + st.unit + ' מתוך 5' : 'באמצע מבחן הרמה';
+      return '<button type="button" class="hc' + (c.id === rec ? ' rec' : '') + '" data-course="' + c.id + '" data-tone="' + c.id + '">' +
+        (c.id === rec ? '<span class="hc-badge">' + (act ? 'להמשיך' : 'מומלץ') + '</span>' : '') +
+        '<span class="lx-ic">' + icon(c.icon) + '</span><b>' + esc(c.title) + '</b><small>' + esc(line) + '</small>' +
+        '<span class="lx-bar"><i style="width:' + n * 20 + '%"></i></span></button>';
+    }).join('');
     p.after(box);
-    box.addEventListener('click', (e) => { const b = e.target.closest('[data-h]'); if (!b) return; if (b.dataset.h === 'resume') resume(); else openCourses(); });
+    box.addEventListener('click', (e) => { const b = e.target.closest('[data-course]'); if (b) go(b.dataset.course); });
   }
 
   /* ---------- boot ---------- */

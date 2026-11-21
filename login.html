@@ -13,7 +13,6 @@
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&family=Inter:opsz,wght@14..32,400..700&display=swap">
 <link rel="stylesheet" href="assets/css/site.css">
 <link rel="stylesheet" href="assets/css/login.css">
-<link rel="preload" as="image" href="assets/img/login-art.webp">
 </head>
 <body class="login-page">
 <div class="ln" data-login>
@@ -45,30 +44,23 @@
     <p class="ln-foot">אב-טיפוס להמחשה</p>
   </main>
 
-  <!-- the picture side -->
-  <aside class="ln-art" aria-hidden="true">
-    <img class="ln-img" src="assets/img/login-art.webp" alt="">
-    <div class="ln-shade"></div>
-    <div class="ln-owl-wrap">
-      <div class="ln-bubble">היי! אני כבר מחכה לך כאן.<br>קפה, ספר, ויאללה מתחילים?</div>
-      <div class="ln-owl owl-live" data-owl>
-        <div class="owl-tilt">
-          <img class="owl-body" src="assets/img/owl-noeyes.webp" alt="" width="400" height="400">
-          <span class="owl-eye" style="--x:40%"></span>
-          <span class="owl-eye" style="--x:59.9%"></span>
-          <span class="owl-sheen"></span>
-        </div>
+  <!-- the scene: only Shachar, on a glossy floor that ripples like water under the mouse -->
+  <aside class="ln-art" aria-hidden="true" data-art>
+    <span class="ln-horizon"></span>
+    <canvas class="ln-water" data-water></canvas>
+    <div class="ln-hero owl-live" data-owl>
+      <div class="owl-tilt">
+        <img class="owl-body" src="assets/img/owl-noeyes.webp" alt="" width="400" height="400">
+        <span class="owl-eye" style="--x:40%"></span>
+        <span class="owl-eye" style="--x:59.9%"></span>
+        <span class="owl-sheen"></span>
       </div>
     </div>
-    <ul class="ln-feats">
-      <li><i data-i="target"></i><span><b>מבחן רמה קצר</b>5 שאלות, ושחר יודע מאיפה להתחיל</span></li>
-      <li><i data-i="game"></i><span><b>לומדים כמו במשחק</b>או בשאלות, או בסגנון שלכם</span></li>
-      <li><i data-i="brain"></i><span><b>זוכר אתכם</b>ממשיכים בדיוק מאיפה שעצרתם</span></li>
-    </ul>
   </aside>
 </div>
 
 <script src="assets/js/core.js"></script>
 <script src="assets/js/account.js"></script>
+<script src="assets/js/login.js"></script>
 </body>
 </html>

@@ -118,7 +118,7 @@ html.motion-off .row, html.motion-off .qr { animation: none; }
   .chat-page .brand-mark { width: 24px; height: 24px; }
   .chat-page .brand-word { font-size: 18px; }
   .chat-page .brand-prod { font-size: 16px; }
-  .lg-log { padding: 62px 12px calc(196px + env(safe-area-inset-bottom, 0px)); gap: 12px; }
+  .lg-log { padding: 62px 12px calc(216px + env(safe-area-inset-bottom, 0px)); gap: 12px; }
   .lg-dock { bottom: calc(76px + env(safe-area-inset-bottom, 0px)); padding: 14px 8px 4px; }
   .lg-compose { min-height: 52px; border-radius: 22px; padding: 6px 12px 6px 6px; }
   html[dir="rtl"] .lg-compose { padding: 6px 12px 6px 6px; }
@@ -359,3 +359,114 @@ html[dir="ltr"] .lx-timer i { transform-origin: left center; }
 /* a small hand-written line from Shachar about itself */
 .aside { display: flex; align-items: center; gap: 7px; max-width: 560px; padding: 2px 6px; font-size: 13px; font-style: italic; line-height: 1.5; color: rgba(10, 22, 48, .58); animation: rowIn .5s var(--ease) .2s both; }
 .aside img { width: 18px; height: 18px; border-radius: 6px; flex: none; }
+
+/* ==========================================================================
+   first screen: the courses, right away
+   ========================================================================== */
+.hello-courses { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; max-width: 560px; margin: 20px auto 0; }
+.hc {
+  position: relative; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; padding: 14px 13px 12px; border: 0; border-radius: 20px;
+  text-align: start; color: #0a1630; font: inherit; cursor: pointer;
+  background: rgba(255, 255, 255, .68); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .95), 0 12px 28px -18px rgba(24, 48, 110, .5);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); transition: transform .25s var(--ease), background-color .2s, box-shadow .2s;
+}
+.hc:hover { transform: translateY(-3px); background: rgba(255, 255, 255, .92); }
+.hc:active { transform: translateY(0) scale(.98); }
+.hc.rec { box-shadow: inset 0 0 0 2px #2b5cff, 0 16px 32px -18px rgba(43, 92, 255, .6); }
+.hc-badge { position: absolute; top: -10px; inset-inline-end: 10px; padding: 3px 10px; border-radius: 999px; font-size: 11.5px; font-weight: 700; color: #fff; background: #2b5cff; box-shadow: 0 6px 14px -6px rgba(43, 92, 255, .7); }
+.hc .lx-ic { width: 36px; height: 36px; border-radius: 12px; margin-bottom: 4px; }
+.hc b { font-size: 14.5px; font-weight: 700; line-height: 1.3; }
+.hc small { font-size: 12px; color: rgba(10, 22, 48, .6); }
+.hc .lx-bar { margin-top: 6px; }
+.sug.spark-sug { display: inline-flex; align-items: center; gap: 6px; color: #3346c8; }
+.sug.spark-sug svg { width: 15px; height: 15px; }
+
+/* ==========================================================================
+   practice, Duolingo-style: the coach asks, reacts, and you continue at your pace
+   ========================================================================== */
+.lx-prog { display: flex; gap: 5px; margin-top: 9px; }
+.lx-prog i { flex: 1; height: 8px; border-radius: 99px; background: rgba(10, 22, 48, .09); }
+.lx-prog i.done { background: #22c55e; }
+.lx-prog i.now { background: #9fdcb3; }
+.lx-ask { display: flex; align-items: flex-end; gap: 10px; margin-top: 12px; }
+.coach { flex: none; width: 66px; height: 66px; }
+.coach-owl { position: relative; width: 100%; height: 100%; }
+.coach-owl .owl-body { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0 6px 8px rgba(30, 50, 90, .18)); }
+.lx-ask .lx-qt {
+  position: relative; flex: 1; margin: 0 0 8px; padding: 11px 14px; border-radius: 18px; font-size: 16px; line-height: 1.5;
+  background: #fff; box-shadow: inset 0 0 0 1.5px rgba(10, 22, 48, .1);
+}
+.lx-ask .lx-qt::before {
+  content: ""; position: absolute; bottom: 12px; inset-inline-start: -6px; width: 12px; height: 12px; background: #fff;
+  border-bottom: 1.5px solid rgba(10, 22, 48, .1); border-inline-start: 1.5px solid rgba(10, 22, 48, .1); transform: rotate(45deg);
+}
+html[dir="rtl"] .lx-ask .lx-qt::before { transform: rotate(-135deg); }
+.react-ok .coach-owl .owl-tilt { animation: owlHop .7s var(--ease); }
+.react-bad .coach-owl .owl-tilt { animation: owlShake .55s ease-in-out; }
+.react-ok .coach-owl .owl-eye { transform: translate(0, -12%) scale(1.06, .42) !important; }
+.react-bad .coach-owl .owl-eye { transform: translate(0, 20%) scale(.86, .62) !important; filter: saturate(.55); }
+.lx-old .coach-owl .owl-tilt { animation: none; }
+
+.lx-fb { margin: 14px -16px -16px; padding: 14px 16px 16px; border-top: 2px solid; animation: fbUp .35s var(--ease) both; }
+.lx-fb.good { background: #e9f9ee; border-color: #bfeccc; color: #145a29; }
+.lx-fb.miss { background: #fdeeee; border-color: #f6caca; color: #861f1f; }
+.lx-fb-t { display: flex; align-items: center; gap: 9px; font-size: 18px; font-weight: 800; }
+.lx-fb-t > svg { width: 28px; height: 28px; padding: 5px; border-radius: 50%; color: #fff; stroke-width: 2.6; flex: none; }
+.lx-fb.good .lx-fb-t > svg { background: #22a447; }
+.lx-fb.miss .lx-fb-t > svg { background: #e14848; }
+.lx-combo { display: inline-flex; align-items: center; gap: 4px; padding: 3px 9px; border-radius: 999px; font-size: 13px; font-weight: 800; color: #c25e00; background: #ffe9cc; }
+.lx-combo svg { width: 14px; height: 14px; fill: #ff8a00; stroke: #e57400; }
+.lx-fb-xp { margin-inline-start: auto; padding: 3px 10px; border-radius: 999px; font-size: 13.5px; font-weight: 800; color: #9a6a00; background: #fff1c2; }
+.lx-fb p { margin-top: 6px; font-size: 15px; line-height: 1.6; }
+.lx-next { width: 100%; justify-content: center; margin-top: 12px; padding: 12px 18px; font-size: 16px; border-radius: 16px; }
+.lx-fb.good .lx-next { background: #22a447; box-shadow: 0 4px 0 #17803a; }
+.lx-fb.miss .lx-next { background: #e14848; box-shadow: 0 4px 0 #b53434; }
+.lx-next:active { transform: translateY(3px); box-shadow: none !important; }
+.lx-next svg { width: 17px; height: 17px; }
+.lx-old .lx-next { display: none; }
+@keyframes fbUp { from { opacity: 0; transform: translateY(14px); } }
+html.motion-off .lx-fb { animation: none; }
+
+
+@media (max-width: 760px) {
+  .hello-courses { grid-auto-flow: column; grid-template-columns: none; grid-auto-columns: 62%; overflow-x: auto; scroll-snap-type: x mandatory; padding: 12px 4px 6px; margin-top: 8px; scrollbar-width: none; }
+  .hello-courses::-webkit-scrollbar { display: none; }
+  .hc { scroll-snap-align: start; }
+  .coach { width: 54px; height: 54px; }
+  .lx-ask .lx-qt { font-size: 15px; padding: 10px 12px; }
+  .lx-fb { margin: 12px -13px -14px; padding: 12px 13px 14px; }
+  .lx-fb-t { font-size: 16.5px; }
+}
+
+/* ==========================================================================
+   the first screen: Shachar asks for the course in a speech bubble, the courses come in softly
+   ========================================================================== */
+.hello-hero { position: relative; width: max-content; margin: 0 auto 6px; }
+.hello-hero .hello-owl { width: 176px; height: 176px; margin: 0; }
+.hello-say {
+  position: absolute; bottom: 68%; inset-inline-start: calc(100% - 34px); z-index: 3; margin: 0; white-space: nowrap;
+  padding: 10px 16px; border-radius: 20px; border-end-start-radius: 6px;
+  font-size: 15.5px; font-weight: 700; line-height: 1.3; color: #0a1630; background: #fff;
+  box-shadow: 0 16px 30px -18px rgba(24, 48, 110, .55), inset 0 0 0 1px rgba(10, 22, 48, .06);
+  transform-origin: 100% 100%; animation: sayPop .6s var(--ease) .35s backwards;
+}
+html[dir="ltr"] .hello-say { transform-origin: 0 100%; }
+@keyframes sayPop { from { opacity: 0; transform: translateY(8px) scale(.6); } }
+.hello-courses .hc { animation: hcIn .5s var(--ease) backwards; }
+.hello-courses .hc:nth-child(2) { animation-delay: .07s; }
+.hello-courses .hc:nth-child(3) { animation-delay: .14s; }
+@keyframes hcIn { from { opacity: 0; transform: translateY(12px); } }
+.hc[data-tone="stats"] .lx-ic, .hc[data-tone="stats"] .lx-bar i { background: linear-gradient(140deg, #2b5cff, #5f8dff); }
+.hc[data-tone="writing"] .lx-ic, .hc[data-tone="writing"] .lx-bar i { background: linear-gradient(140deg, #7c4dff, #c15cf0); }
+.hc[data-tone="english"] .lx-ic, .hc[data-tone="english"] .lx-bar i { background: linear-gradient(140deg, #0c9f9c, #33bfe0); }
+.hello > h1 + p { font-size: 14.5px; }
+html.motion-off .hello-say, html.motion-off .hello-courses .hc { animation: none; }
+@media (max-width: 760px) {
+  .hello-hero .hello-owl { width: 132px; height: 132px; }
+  .hello-say { font-size: 13.5px; padding: 8px 12px; bottom: 70%; inset-inline-start: calc(100% - 42px); }
+  .hello-courses { margin-inline: -12px; padding-inline: 12px; scroll-padding-inline: 12px; }
+}
+
+/* the chips: the course name drops on narrow phones so "הגדרות" stays in view */
+.lx-chips em { font-style: normal; }
+@media (max-width: 480px) { .lx-chips .cn, .lx-chips [data-c="style"] span { display: none; } }

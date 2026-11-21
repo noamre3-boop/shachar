@@ -164,17 +164,44 @@
     return '<span class="me-av" style="--s:' + size + 'px"><b>' + letter + '</b></span>';
   }
 
+  /* ---------------- Shachar's outfit: picked in Settings, worn wherever he talks to you ---------------- */
+  const OUTFITS = {
+    classic: { t: 'קלאסי', body: 'assets/img/owl-noeyes.webp', face: 'assets/img/owl-face.webp' },
+    coat: { t: 'מעיל', body: 'assets/img/shachar-coat.webp', face: 'assets/img/shachar-coat-face.webp' },
+    sweater: { t: 'סוודר', body: 'assets/img/shachar-sweater.webp', face: 'assets/img/shachar-sweater-face.webp' },
+    headset: { t: 'אוזניות', body: 'assets/img/shachar-headset.webp', face: 'assets/img/shachar-headset-face.webp' },
+  };
+  const outfit = () => { const k = mem.get('outfit', 'classic'); return OUTFITS[k] ? k : 'classic'; };
+  const faceSrc = () => OUTFITS[outfit()].face;
+  // a live owl in an outfit (eye spots per outfit come from the CSS); without `fit` it follows the user's choice
+  function owlHTML(cls, attrs, fit) {
+    const k = fit || outfit();
+    return '<div class="owl-live ' + (cls || '') + '" data-fit="' + k + '"' + (fit ? '' : ' data-dress') + (attrs ? ' ' + attrs : '') + '><div class="owl-tilt">' +
+      '<img class="owl-body" src="' + OUTFITS[k].body + '" alt=""><span class="owl-eye" style="--x:40%"></span><span class="owl-eye" style="--x:59.9%"></span><span class="owl-sheen"></span></div></div>';
+  }
+  // put the chosen outfit on every owl and avatar marked data-dress
+  function dress(root) {
+    const k = outfit(), o = OUTFITS[k];
+    $$('[data-dress]', root || document).forEach((el) => {
+      if (el.tagName === 'IMG') { if (el.getAttribute('src') !== o.face) el.setAttribute('src', o.face); return; }
+      el.dataset.fit = k;
+      const img = $('.owl-body', el);
+      if (img && img.getAttribute('src') !== o.body) img.setAttribute('src', o.body);
+    });
+  }
+
   function chip() {
     const end = $('.nav-end');
     if (!end || !me) return;
     const b = document.createElement('button');
     b.type = 'button'; b.className = 'me-chip'; b.setAttribute('data-me', '');
-    b.setAttribute('aria-label', 'החשבון שלי ומה ששחר זוכר');
+    b.setAttribute('aria-label', 'הגדרות');
     b.innerHTML = avatarHTML(26) + '<span class="me-name">' + esc(firstName() || 'אורח') + '</span>';
     end.insertBefore(b, end.firstChild);
     b.addEventListener('click', openPanel);
   }
 
+  /* ---------------- Settings: Shachar's outfit, sounds and motion, how to address you, the memory ---------------- */
   function openPanel() {
     let d = $('#me-dlg');
     if (!d) {
@@ -185,23 +212,47 @@
     }
     const notes = mem.notes();
     const panels = mem.providers.map((p) => { try { return p.panel ? p.panel() : ''; } catch { return ''; } }).join('');
+    const cur = outfit();
+    const sw = (k, on, t, sub) => '<button type="button" class="set-row" role="switch" data-sw="' + k + '" aria-checked="' + on + '"><span><b>' + t + '</b><small>' + sub + '</small></span><i class="sw-ui" aria-hidden="true"></i></button>';
+    const keep = d.querySelector('.dlg-in') ? d.querySelector('.dlg-in').scrollTop : 0;
     d.innerHTML = '<div class="dlg-in" data-lenis-prevent>' +
-      '<div class="dlg-head"><h2 id="me-h">מה שחר זוכר</h2><button class="round-btn" type="button" data-close aria-label="סגירה">' + icon('x') + '</button></div>' +
-      '<div class="me-who">' + avatarHTML(46) + '<div><b>' + esc(me.guest ? 'אורח' : (me.name || firstName())) + '</b><small>' + esc(me.guest ? 'בלי חשבון · הזיכרון נשמר במכשיר הזה בלבד' : (me.email ? me.email + ' · ' : '') + 'מחובר עם Google') + '</small></div></div>' +
+      '<div class="dlg-head"><h2 id="me-h">הגדרות</h2><button class="round-btn" type="button" data-close aria-label="סגירה">' + icon('x') + '</button></div>' +
+      '<div class="me-who">' + avatarHTML(46) + '<div><b>' + esc(me.guest ? (firstName() || 'אורח') : (me.name || firstName())) + '</b><small>' + esc(me.guest ? 'בלי חשבון · הזיכרון נשמר במכשיר הזה בלבד' : (me.email ? me.email + ' · ' : '') + 'מחובר עם Google') + '</small></div></div>' +
+      '<h3 class="me-h3">' + icon('palette') + 'העיצוב של שחר</h3>' +
+      '<div class="fit-grid">' + Object.keys(OUTFITS).map((k) => '<button type="button" class="fit" data-pick="' + k + '" aria-pressed="' + (k === cur) + '">' + owlHTML('fit-owl', 'aria-hidden="true"', k) + '<span>' + OUTFITS[k].t + '</span></button>').join('') + '</div>' +
+      '<h3 class="me-h3">' + icon('sound') + 'צלילים ותנועה</h3>' +
+      '<div class="set-list">' +
+        sw('sound', mem.get('sound', true) !== false, 'צלילים בתרגול', 'צליל קצר על תשובה נכונה או שגויה') +
+        sw('motion', !S.reduced(), 'אנימציות', 'שחר זז, ממצמץ ומגיב לתשובות') +
+      '</div>' +
       '<h3 class="me-h3">' + icon('smile') + 'איך לפנות אליך</h3>' +
       '<div class="me-addr" data-addr>' + [['f', 'בלשון נקבה'], ['m', 'בלשון זכר'], ['n', 'בלי מגדר']].map(([k, t]) => '<button type="button" data-a="' + k + '" aria-pressed="' + (mem.get('addr', 'n') === k) + '">' + t + '</button>').join('') + '</div>' +
-      '<h3 class="me-h3">' + icon('brain') + 'דברים שביקשת שאזכור</h3>' +
+      '<h3 class="me-h3">' + icon('brain') + 'הזיכרון שלי</h3>' +
       (notes.length ? '<ul class="me-notes">' + notes.map((n, i) => '<li><span>' + esc(n.t) + '</span><button type="button" data-del="' + i + '" aria-label="מחיקה">' + icon('x') + '</button></li>').join('') + '</ul>'
         : '<p class="me-empty">עוד אין כאן כלום. אפשר לכתוב לשחר "תזכור ש…", או להוסיף כאן.</p>') +
       '<form class="me-add" data-add><input name="t" maxlength="160" placeholder="למשל: אני לומדת חינוך, שנה ב׳" aria-label="משהו ששחר יזכור"><button class="btn btn-dark" type="submit">הוספה</button></form>' +
       panels +
-      '<p class="me-fine">' + icon('lock') + 'הזיכרון נשמר במכשיר הזה, תחת ' + (me.guest ? 'כניסת האורח' : 'החשבון שלך') + '. השיחות עם המודל המקומי לא יוצאות מהמחשב.</p>' +
+      '<p class="me-fine">' + icon('lock') + 'הזיכרון וההגדרות נשמרים במכשיר הזה, תחת ' + (me.guest ? 'כניסת האורח' : 'החשבון שלך') + '.</p>' +
       '<div class="me-actions"><button class="btn btn-line" type="button" data-forget>' + icon('trash') + 'מחיקת הזיכרון</button><button class="btn btn-dark" type="button" data-signout>' + icon('logout') + (me.guest ? 'יציאה' : 'התנתקות') + '</button></div>' +
       '</div>';
     hydrateIcons(d);
+    d.querySelector('.dlg-in').scrollTop = keep;
     $('[data-close]', d).addEventListener('click', () => d.close());
+    $$('[data-pick]', d).forEach((b) => b.addEventListener('click', () => {
+      mem.set('outfit', b.dataset.pick); dress();
+      $$('[data-pick]', d).forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+      const o = $('.owl-live', b); o.classList.remove('hop'); void o.offsetWidth; o.classList.add('hop');
+      $$('.owl-live[data-dress]').forEach((x) => { x.classList.remove('hop'); void x.offsetWidth; x.classList.add('hop'); });
+      if (S.sfx) S.sfx('tap');
+    }));
+    $$('[data-sw]', d).forEach((b) => b.addEventListener('click', () => {
+      const on = b.getAttribute('aria-checked') !== 'true';
+      b.setAttribute('aria-checked', String(on));
+      if (b.dataset.sw === 'sound') { mem.set('sound', on); if (on && S.sfx) S.sfx('ok'); }
+      if (b.dataset.sw === 'motion') { document.documentElement.classList.toggle('motion-off', !on); store.set('motion', on ? 'on' : 'off'); }
+    }));
     $$('[data-del]', d).forEach((b) => b.addEventListener('click', () => { mem.removeNote(+b.dataset.del); openPanel(); }));
-    $$('[data-addr] [data-a]', d).forEach((b) => b.addEventListener('click', () => { mem.set('addr', b.dataset.a); openPanel(); toast('מעכשיו כך אפנה אליך'); }));
+    $$('[data-addr] [data-a]', d).forEach((b) => b.addEventListener('click', () => { mem.set('addr', b.dataset.a); mem.set('addrAuto', false); openPanel(); toast('מעכשיו כך אפנה אליך'); }));
     $('[data-add]', d).addEventListener('submit', (e) => { e.preventDefault(); if (mem.addNote(e.target.t.value)) { toast('אזכור את זה'); openPanel(); } });
     $('[data-forget]', d).addEventListener('click', () => {
       if (!confirm('למחוק את כל מה ששחר זוכר עליך? זה כולל את השיחות, ההערות וההתקדמות בקורסים, ואי אפשר לבטל.')) return;
@@ -211,11 +262,24 @@
     if (!d.open) d.showModal ? d.showModal() : d.setAttribute('open', '');
   }
 
-  S.account = { me, uid, mem, firstName, learnFrom, profileText, signIn, signOut, guest, openPanel, avatarHTML };
+  /* Hebrew is gendered. Without asking, the form of address is guessed from a clearly gendered first name;
+     unisex or unknown names stay neutral. It can always be changed in "מה שחר זוכר". */
+  const NAMES_F = ('נועה מאיה תמר שירה יעל מיכל דנה הילה שני אביגיל רחל שרה רבקה לאה אסתר חנה אורית מירב מיטל ענבל ענבר קרן גלית הדס אפרת יפעת לימור ליאת לילך נטע נעמה עינב שירן שלי תהל אלמה ליבי סיון סיוון אדל אלינור אלונה אורטל הגר הודיה טליה יהודית לינוי ליהי ליה מרים נגה נוגה נטלי סופיה ענת פזית קורל רינה רות שושנה תהילה תמי אנה מרינה אולגה לנה יוליה ' +
+    'noa maya maia tamar shira yael michal dana hila shani avigail abigail rachel sarah sara rivka leah esther hannah hana orit merav meital inbal inbar keren galit hadas efrat yifat limor liat lilach neta naama einav shiran shelly shelli tahel alma libi sivan adel elinor alona ortal hagar hodaya talia yehudit linoy lihi lia miriam noga natali natalie sofia anat pazit coral rina ruth tehila tami anna marina olga lena julia yulia maria emma olivia sophia mia ella').split(' ');
+  const NAMES_M = ('יוסי יוסף משה דוד אברהם יצחק יעקב אלי איתי איתן עידו עומר אורי גיא יונתן נתנאל אריה רון ניר אלון ערן עמרי יואב אסף תומר רועי עוז אוריאל אליאב בן חיים יאיר יהונתן מתן נדב שלמה אלעד בועז גלעד דביר הראל ליאם מיכאל אוהד אייל איל דן דניאל אמיר אבי שמעון ראובן לוי יהודה בנימין אהרון זאב מאיר שמואל גבריאל רפאל ירון עופר עמוס עזרא רמי קובי שגיא אביתר ' +
+    'yossi yosef joseph moshe david avraham avi itzik yitzhak yaakov jacob eli itai itay eitan ethan ido omer uri guy yonatan jonathan netanel ron nir alon eran omri yoav asaf assaf tomer roi oz ben haim chaim yair matan nadav shlomo elad boaz gilad dvir harel liam michael ohad eyal dan daniel amir shimon reuven levi yehuda benjamin aharon aaron zeev meir shmuel gabriel rafael yaron ofer amos ezra rami kobi sagi evyatar john james mark peter paul alex alexander ivan').split(' ');
+  function guessAddr(n) {
+    n = String(n || '').trim().toLowerCase();
+    return NAMES_F.includes(n) ? 'f' : NAMES_M.includes(n) ? 'm' : 'n';
+  }
+  if (me && !mem.get('addr', '')) { mem.set('addr', me.guest ? 'n' : guessAddr(firstName())); mem.set('addrAuto', true); }
+
+  S.account = { me, uid, mem, firstName, learnFrom, profileText, signIn, signOut, guest, openPanel, avatarHTML, guessAddr, OUTFITS, outfit, faceSrc, owlHTML, dress };
 
   function boot() {
     const login = $('[data-login]');
     if (login) { loginPage(login); return; }
+    dress();
     chip();
     setTimeout(verify, 1200);
   }

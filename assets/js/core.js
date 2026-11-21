@@ -92,6 +92,10 @@
     logout: '<path d="M14 4.5H18a1.5 1.5 0 0 1 1.5 1.5v12A1.5 1.5 0 0 1 18 19.5h-4"/><path d="M10 8l-4 4 4 4M6 12h9"/>',
     trophy: '<path d="M8 4.5h8V10a4 4 0 0 1-8 0z"/><path d="M8 6.5H5a2.5 2.5 0 0 0 3 4M16 6.5h3a2.5 2.5 0 0 1-3 4M12 14v3.5M8.5 20h7M9.5 17.5h5"/>',
     pen: '<path d="M4.5 19.5 5.5 15 15.5 5a2.1 2.1 0 0 1 3 3l-10 10z"/><path d="M13.5 7l3 3"/>',
+    palette: '<path d="M12 3.5a8.5 8.5 0 1 0 0 17c1.3 0 1.8-.9 1.8-1.8 0-1.3-1-1.6-1-2.7 0-1 .8-1.8 1.8-1.8H17a3.5 3.5 0 0 0 3.5-3.5c0-4-3.8-7.2-8.5-7.2z"/><circle cx="7.6" cy="11" r="1.1" fill="currentColor" stroke="none"/><circle cx="10.4" cy="7.4" r="1.1" fill="currentColor" stroke="none"/><circle cx="14.8" cy="7.6" r="1.1" fill="currentColor" stroke="none"/>',
+    gear: '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>',
+    sound: '<path d="M4.5 9.5h3l4.5-4v13l-4.5-4h-3z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/>',
+    mute: '<path d="M4.5 9.5h3l4.5-4v13l-4.5-4h-3z"/><path d="m16 9.5 5 5M21 9.5l-5 5"/>',
     list2: '<path d="M9 7h11M9 12h11M9 17h11"/><circle cx="5" cy="7" r="1" fill="currentColor" stroke="none"/><circle cx="5" cy="12" r="1" fill="currentColor" stroke="none"/><circle cx="5" cy="17" r="1" fill="currentColor" stroke="none"/>',
   };
   function icon(name, cls) {
@@ -115,7 +119,8 @@
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
   // Hebrew text with English words or math in it: wrap those runs left-to-right, so
   // "z = (82-75)/10 = 0.7", "08:30–15:30" or "(skimming)" read correctly.
-  const MATH = /(?:[A-Za-z]{1,3}\s*=\s*)?\(?\d[\d.,:]*(?:\s*[-−–+*×/÷^=]\s*\(?\s*\d[\d.,:]*\s*\)?)+/g;
+  // separators only between digits, so a trailing ", " stays outside the LTR run
+  const MATH = /(?:[A-Za-z]{1,3}\s*=\s*)?\(?\d+(?:[.,:]\d+)*(?:\s*[-−–+*×/÷^=]\s*\(?\s*\d+(?:[.,:]\d+)*(?:\s*\))?)+/g;
   const LATIN = /(?:-(?=[A-Za-z]))?[A-Za-z_](?:[A-Za-z0-9_ ,.;:'’=-]*[A-Za-z0-9_])?(?:-(?=[\s,)]|$))?(?:[.!?](?=["”״'\s]|$))?/g;
   const latinRun = (m) => (/[.!?]$/.test(m) && (m.match(/[A-Za-z]{2,}/g) || []).length < 3 ? '\u0001' + m.slice(0, -1) + '\u0002' + m.slice(-1) : '\u0001' + m + '\u0002');
   function rich(s) {
@@ -219,7 +224,8 @@
     pic.decoding = 'async';
     pic.src = img ? img.currentSrc || img.src : 'assets/img/sky.webp';
     let ready = false, visible = true, mx = 0, my = 0, tmx = 0, tmy = 0, scroll = 0;
-    pic.onload = () => {
+    // (re)load the picture into the GPU; also used when a busy GPU drops it
+    function upload() {
       gl.bindTexture(gl.TEXTURE_2D, tex);
       gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
       gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGB, gl.RGB, gl.UNSIGNED_BYTE, pic);
@@ -229,10 +235,15 @@
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
       gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
       gl.uniform2f(uImg, pic.naturalWidth, pic.naturalHeight);
+    }
+    pic.onload = () => {
+      upload();
       ready = true;
       resize();
       requestAnimationFrame(() => host.classList.add('gl'));
     };
+    // if the GPU resets, fall back to the still picture instead of a blank sky
+    cv.addEventListener('webglcontextlost', () => { ready = false; host.classList.remove('gl'); cv.style.display = 'none'; });
     function resize() {
       const r = cv.getBoundingClientRect();
       const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
@@ -248,6 +259,7 @@
     }
     if ('IntersectionObserver' in window) new IntersectionObserver((e) => { visible = e[0].isIntersecting; }).observe(host);
     const t0 = performance.now();
+    let checkAt = t0 + 4000; const px1 = new Uint8Array(4);
     (function frame(now) {
       requestAnimationFrame(frame);
       if (!ready || !visible || document.hidden) return;
@@ -256,6 +268,12 @@
       gl.uniform2f(uM, mx, my);
       gl.uniform1f(uSc, scroll);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+      // every few seconds: the sky is never near-black, so a dark pixel means the picture was dropped
+      if (now > checkAt) {
+        checkAt = now + 4000;
+        gl.readPixels(cv.width >> 1, cv.height >> 1, 1, 1, gl.RGBA, gl.UNSIGNED_BYTE, px1);
+        if (px1[0] + px1[1] + px1[2] < 120) { upload(); gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4); }
+      }
     })(t0);
   }
 
@@ -270,7 +288,7 @@
     state: 'unknown',
     info: '',
     allowed() { return ON_THIS_PC || store.get('local-ok', false) === true; },
-    async optIn() { store.set('local-ok', true); return this.detect(); },
+    async optIn() { store.set('local-ok', true); const c = await claude.detect(); const l = await this.detect(); return c || l; },
     listeners: new Set(),
     on(fn) { this.listeners.add(fn); fn(this); return () => this.listeners.delete(fn); },
     emit() { this.listeners.forEach((f) => { try { f(this); } catch (e) { console.error(e); } }); },
@@ -363,6 +381,66 @@
         // a small model sometimes drops a token from another script into Hebrew text
         .replace(/[฀-๿぀-ヿ㐀-鿿가-힯Ѐ-ӿ؀-ۿऀ-ॿ]+/g, '')
         .replace(/[ \t]{2,}/g, ' ').trim();
+    },
+  };
+
+  /* ---------------- Claude, through the local server (serve.py keeps the API key on this computer) ---------------- */
+  const claude = {
+    base: null, ok: false, model: '',
+    candidates() {
+      const list = [];
+      if (/^https?:$/.test(location.protocol) && ['localhost', '127.0.0.1'].includes(location.hostname)) list.push(location.origin);
+      list.push('http://127.0.0.1:5180');
+      return Array.from(new Set(list));
+    },
+    async detect() {
+      if (!local.allowed()) { this.ok = false; this.base = null; local.emit(); return false; }
+      for (const b of this.candidates()) {
+        const ctl = new AbortController();
+        const t = setTimeout(() => ctl.abort(), 2500);
+        try {
+          const j = await fetch(b + '/api/status', { cache: 'no-store', signal: ctl.signal }).then((r) => r.json());
+          if (j && j.claude) { this.base = b; this.ok = true; this.model = j.model || ''; local.emit(); return true; }
+        } catch { /* not here */ } finally { clearTimeout(t); }
+      }
+      this.ok = false; this.base = null; local.emit(); return false;
+    },
+    /** streams the reply; onText(fullTextSoFar) is called as words arrive */
+    async chat({ system, messages, maxTokens, onText, signal }) {
+      const r = await fetch(this.base + '/api/chat', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' }, signal,
+        body: JSON.stringify({ system, messages, max_tokens: maxTokens || 900 }),
+      });
+      if (!r.ok || !r.body) throw new Error('claude ' + r.status);
+      const reader = r.body.getReader(), dec = new TextDecoder();
+      let buf = '', text = '';
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        let i;
+        while ((i = buf.indexOf('\n\n')) >= 0) {
+          const line = buf.slice(0, i).trim(); buf = buf.slice(i + 2);
+          if (line.indexOf('data:') !== 0) continue;
+          const ev = JSON.parse(line.slice(5));
+          if (ev.error) throw new Error('claude: ' + ev.error);
+          if (ev.t) { text += ev.t; if (onText) onText(text); }
+        }
+      }
+      return text.trim();
+    },
+  };
+  const ai = {
+    which: () => (claude.ok ? 'claude' : local.state === 'ok' || local.state === 'busy' ? 'local' : 'none'),
+    ready: () => ai.which() !== 'none',
+    /** system: [stable persona, per-user part]; Claude gets them as two blocks, the local model as one */
+    async complete({ system, messages, maxTokens, temperature, onText, onTick, signal }) {
+      const parts = (Array.isArray(system) ? system : [system]).filter(Boolean);
+      if (claude.ok) {
+        try { return await claude.chat({ system: parts, messages, maxTokens, onText, signal }); }
+        catch (e) { if (signal && signal.aborted) throw e; console.warn(e); }
+      }
+      return local.llm({ system: parts.join('\n\n'), messages, maxLength: Math.min(600, maxTokens || 420), temperature: temperature || .3, onTick, signal });
     },
   };
 
@@ -541,6 +619,13 @@
       (o.profile ? '\n\n' + o.profile : '');
   }
   const SYSTEM = systemFor({});
+  function systemParts(o) {
+    o = o || {};
+    const a = ADDR[o.addr] ? o.addr : 'n';
+    const stable = PERSONA.replace('{ADDR}', ADDR[a]) + '\n\nשתי דוגמאות לסגנון בלבד (אל תזכיר אותן ואל תעתיק מהן משפטים):\n' + SHOTS[a].join('\n');
+    const dyn = (o.emo ? 'בהודעה האחרונה משתפים אותך ברגש: קודם הכרה חמה ברגש, אחר כך צעד קטן אחד, ובסוף שאלה עדינה.\n\n' : '') + (o.profile || '');
+    return [stable, dyn.trim()];
+  }
   const CRISIS = /להתאבד|התאבדות|לפגוע בעצמי|לא רוצה לחיות|אין טעם לחיות|לשים קץ|רוצה למות|בא לי למות|לסיים את החיים/;
   const CRISIS_TEXT = 'אני כאן, ותודה ששיתפת. נשמע שקשה לך מאוד עכשיו, ומגיע לך לא להיות עם זה לבד. אפשר לדבר עכשיו עם ער"ן בטלפון 1201, הם זמינים 24/7, ובמצב חירום להתקשר למד"א 101. גם דיקנאט הסטודנטים במכללה כאן בשבילך.';
   const clean = (q) => String(q).replace(/\[[^\]]*\]/g, '').trim();
@@ -550,15 +635,15 @@
     const hits = search(q, 3);
     const crisis = CRISIS.test(q);
     const ctx = hits.length ? 'מידע שנשלף (השתמש רק אם רלוונטי):\n' + hits.map((h, i) => '[' + (i + 1) + '] ' + (h.doc.course ? 'חומר לימוד · ' : 'מידע רשמי מהמכללה · ') + h.doc.title + ' / ' + h.h + ': ' + h.t).join('\n') + '\n\n' : '';
-    const messages = (history || []).slice(-6).map((m) => ({ role: m.role, content: clean(m.content).slice(0, 700) }))
+    const messages = (history || []).slice(-12).map((m) => ({ role: m.role, content: clean(m.content).slice(0, 1500) }))
       .concat([{ role: 'user', content: ctx + clean(q) }]);
     // persona + form of address + per-user memory (name, notes, what they are learning)
-    const system = systemFor({ addr: opts.addr, emo: opts.emo || EMO.test(q), profile: opts.profile });
+    const system = systemParts({ addr: opts.addr, emo: opts.emo || EMO.test(q), profile: opts.profile });
     try {
-      let text = await local.llm({ system, messages, maxLength: opts.maxLength || 420, temperature: opts.temperature || .3, onTick: opts.onTick, signal: opts.signal });
+      let text = await ai.complete({ system, messages, maxTokens: 900, temperature: opts.temperature || .3, onText: opts.onText, onTick: opts.onTick, signal: opts.signal });
       // the small model sometimes tacks a bracketed "about me" line on the end; those are hand-written now
       text = (text || '').replace(/\s*\((?:אני|אגב|סוד|גם אני)[^()]{5,200}\)\s*$/, '').trim();
-      if (text && text.length > 6) return { text: crisis && !/1201/.test(text) ? CRISIS_TEXT + '\n\n' + text : text, hits, mode: 'llm', crisis };
+      if (text && text.length > 6) return { text: crisis && !/1201/.test(text) ? CRISIS_TEXT + '\n\n' + text : text, hits, mode: 'llm', engine: ai.which(), crisis };
     } catch (e) { if (opts.signal && opts.signal.aborted) throw e; }
     if (crisis) return { text: CRISIS_TEXT, hits, mode: 'none', crisis };
     if (hits.length) return { text: hits[0].t, hits, mode: 'extract' };
@@ -610,8 +695,8 @@
     modelChip();
     motionToggle();
     smoothScroll();
-    local.detect();
-    setInterval(() => { if (!document.hidden && local.state !== 'busy' && local.allowed()) local.detect(); }, 20000);
+    local.detect(); claude.detect();
+    setInterval(() => { if (!document.hidden && local.state !== 'busy' && local.allowed()) { local.detect(); if (!claude.ok) claude.detect(); } }, 20000);
   }
 
   /* ---------------- the live owl: real render, 3D tilt, eyes that follow the pointer ---------------- */
@@ -662,5 +747,5 @@
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 
-  window.Shachar = { $, $$, esc, rich, sleep, icon, hydrateIcons, toast, store, fmt, reduced, calm, local, owlLive, kb: { search, answer, converse, tokens, SYSTEM, systemFor, addrRule, EMO } };
+  window.Shachar = { $, $$, esc, rich, sleep, icon, hydrateIcons, toast, store, fmt, reduced, calm, local, claude, ai, owlLive, kb: { search, answer, converse, tokens, SYSTEM, systemFor, systemParts, addrRule, EMO } };
 })();

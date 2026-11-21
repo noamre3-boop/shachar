@@ -62,7 +62,8 @@
     if (empty && empty.isConnected) { empty.remove(); empty = null; log.insertAdjacentHTML('afterbegin', '<div class="spacer"></div>'); }
   }
   function add(html) { clearHello(); log.insertAdjacentHTML('beforeend', html); const el = log.lastElementChild; hydrateIcons(el); toBottom(); return el; }
-  const AV = '<img class="av" src="assets/img/owl-face.webp" alt="">';
+  const faceSrc = () => (A && A.faceSrc ? A.faceSrc() : 'assets/img/owl-face.webp');
+  const AV = () => '<img class="av" data-dress src="' + faceSrc() + '" alt="">';
   const meHTML = (t) => '<div class="row me"><div class="bubble">' + esc(t) + '</div></div>';
   const validTo = (d) => (d.course ? 'חומר הקורס' : d.source ? 'אתר המכללה · נבדק ' + d.checked.split('-').reverse().join('.') : d.validTo ? 'בתוקף עד ' + d.validTo.split('-').reverse().join('.') : '');
   function extrasHTML(m) {
@@ -72,15 +73,15 @@
     return '<div class="meta">' + src + mode + '<button class="mbtn" type="button" data-copy>' + icon('copy') + 'העתקה</button><button class="mbtn" type="button" data-handoff>' + icon('inbox') + 'העברה לרכזת</button></div>';
   }
   function botShell(label) {
-    return add('<div class="row bot">' + AV + '<div class="col"><div class="bubble"><span class="think"><span class="dots3"><i></i><i></i><i></i></span><span data-th>' + esc(label || 'שחר חושב…') + '</span></span></div></div></div>');
+    return add('<div class="row bot">' + AV() + '<div class="col"><div class="bubble"><span class="think"><span class="dots3"><i></i><i></i><i></i></span><span data-th>' + esc(label || 'שחר חושב…') + '</span></span></div></div></div>');
   }
   function botHTML(m) {
-    if (m.kind === 'card') return '<div class="row bot lx-row lx-done lx-old">' + AV + '<div class="col">' + m.html + '</div></div>';
-    return '<div class="row bot">' + AV + '<div class="col">' +
+    if (m.kind === 'card') return '<div class="row bot lx-row lx-done lx-old">' + AV() + '<div class="col">' + m.html + '</div></div>';
+    return '<div class="row bot">' + AV() + '<div class="col">' +
       (m.crisis ? '<div class="care"><b>לא לבד:</b> ער"ן 1201 (24/7) · מד"א 101 · דיקנאט הסטודנטים</div>' : '') +
       '<div class="bubble">' + rich(m.text) + '</div>' + (m.aside ? asideHTML(m.aside) : '') + (m.plain ? '' : extrasHTML(m)) + '</div></div>';
   }
-  const asideHTML = (t) => '<p class="aside"><img src="assets/img/owl-face.webp" alt="">' + esc(t) + '</p>';
+  const asideHTML = (t) => '<p class="aside"><img data-dress src="' + faceSrc() + '" alt="">' + esc(t) + '</p>';
 
   /* ---------- live writing: the answer is typed out as it arrives ---------- */
   let typeTokenCancelled = false;
@@ -195,16 +196,22 @@
     const th = $('[data-th]', shell);
     send.hidden = true; stop.hidden = false;
     ctl = new AbortController();
-    let res;
+    let res, streamed = false, live = null;
+    const col0 = $('.col', shell);
+    const onText = (full) => { // Claude streams its answer: show the words as they arrive
+      if (!streamed) { streamed = true; col0.innerHTML = '<div class="bubble"></div>'; live = $('.bubble', col0); }
+      const follow = atBottom(); live.textContent = full; if (follow) toBottom();
+    };
     try {
-      res = await kb.converse(prior, q, { addr: addr(), profile: A ? A.profileText() : '', signal: ctl.signal, onTick: (s) => { th.textContent = s < 4 ? 'שחר חושב…' : 'שחר כותב… ' + Math.round(s) + ' שנ׳'; } });
+      res = await kb.converse(prior, q, { addr: addr(), profile: A ? A.profileText() : '', signal: ctl.signal, onText, onTick: (s) => { th.textContent = s < 4 ? 'שחר חושב…' : 'שחר כותב… ' + Math.round(s) + ' שנ׳'; } });
     } catch (e) {
-      res = { text: e.message === 'בוטל' ? 'עצרתי. אפשר לשאול שוב, או לנסח אחרת.' : 'משהו השתבש בחיבור למודל המקומי. נסו שוב בעוד רגע.', hits: [], mode: 'none' };
+      res = { text: ctl.signal.aborted || e.message === 'בוטל' ? 'עצרתי. אפשר לשאול שוב, או לנסח אחרת.' : 'משהו השתבש בחיבור. נסו שוב בעוד רגע.', hits: [], mode: 'none' };
+      streamed = false;
     }
     const m = { role: 'bot', text: res.text, mode: res.mode, crisis: !!res.crisis, hits: (res.hits || []).map((h) => ({ title: h.doc.title, h: h.h, t: h.t, valid: validTo(h.doc) })) };
     const col = $('.col', shell);
     col.innerHTML = (m.crisis ? '<div class="care"><b>לא לבד:</b> ער"ן 1201 (24/7) · מד"א 101 · דיקנאט הסטודנטים</div>' : '') + '<div class="bubble"></div>';
-    await typeOut($('.bubble', col), m.text);
+    if (streamed) $('.bubble', col).innerHTML = rich(m.text); else await typeOut($('.bubble', col), m.text);
     $('.av', shell).classList.add('pop');
     m.aside = maybeAside(q, res);
     if (m.aside) col.insertAdjacentHTML('beforeend', asideHTML(m.aside));
@@ -292,7 +299,7 @@
     async say(text, opts) {
       typeTokenCancelled = false;
       clearQR();
-      const row = add('<div class="row bot">' + AV + '<div class="col"><div class="bubble"></div></div></div>');
+      const row = add('<div class="row bot">' + AV() + '<div class="col"><div class="bubble"></div></div></div>');
       if (!opts || opts.remember !== false) { history.push({ role: 'bot', text, plain: true }); save(); }
       await typeOut($('.bubble', row), text);
       $('.av', row).classList.add('pop');
@@ -303,7 +310,7 @@
     /** an interactive card; it is remembered (as a static copy) once persist() is called */
     card(html) {
       clearQR();
-      const row = add('<div class="row bot lx-row lx-live">' + AV + '<div class="col">' + html + '</div></div>');
+      const row = add('<div class="row bot lx-row lx-live">' + AV() + '<div class="col">' + html + '</div></div>');
       const entry = { role: 'bot', kind: 'card', html: '', sum: '', pending: true };
       history.push(entry);
       row._entry = entry;
@@ -327,37 +334,25 @@
   const name = A ? A.firstName() : '';
   const lastSeen = A ? A.mem.get('lastSeen', 0) : 0;
   const away = Date.now() - lastSeen;
+  // a calm first screen: a greeting, the courses (learn.js), and three short ideas. Nothing else.
   if (empty) {
-    const h1 = $('h1', empty);
-    if (h1 && name) h1.textContent = lastSeen ? 'היי ' + name + ', טוב לראות אותך שוב.' : 'היי ' + name + ', אני שחר.';
+    const h1 = $('h1', empty), p = $('h1 + p', empty), say = $('[data-say]', empty);
+    h1.textContent = name ? 'היי ' + name + '!' : 'היי, אני שחר!';
+    // Shachar says it himself, in a speech bubble: the course is the main thing here
+    say.textContent = g('בחרי את הקורס שלך', 'בחר את הקורס שלך', 'בחרו את הקורס שלכם');
+    say.hidden = false;
+    p.textContent = lastSeen ? g('טוב לראות אותך שוב. או פשוט כתבי לי כל שאלה.', 'טוב לראות אותך שוב. או פשוט כתוב לי כל שאלה.', 'טוב לראות אותך שוב. אפשר גם פשוט לשאול אותי כל דבר.')
+      : g('או פשוט כתבי לי כל שאלה.', 'או פשוט כתוב לי כל שאלה.', 'אפשר גם פשוט לשאול אותי כל דבר.');
     const day = Math.floor(Date.now() / 864e5);
     const sp = SPARKS[day % SPARKS.length];
+    const ideas = [{ t: sp.k, q: sp.q, spark: true }, { t: 'מתכוננים למבחן', q: SUGGEST[0] }, { t: 'נכשלתי בקורס', q: SUGGEST[1] }];
     const sugs = $('[data-sugs]');
-    sugs.insertAdjacentHTML('beforebegin', '<button class="spark" type="button" data-spark><span class="spark-k">' + icon('sparkle') + esc(sp.k) + '</span><span class="spark-q">' + rich(sp.q) + '</span><span class="spark-go">' + icon('arrowL') + '</span></button>');
-    $('[data-spark]', empty).addEventListener('click', () => ask(sp.q));
-    sugs.innerHTML = SUGGEST.map((s) => '<button class="sug" type="button">' + esc(s) + '</button>').join('');
-    sugs.addEventListener('click', (e) => { const b = e.target.closest('.sug'); if (b) ask(b.textContent); });
+    sugs.innerHTML = ideas.map((x) => '<button class="sug' + (x.spark ? ' spark-sug' : '') + '" type="button" data-q="' + esc(x.q) + '" title="' + esc(x.q) + '">' + (x.spark ? icon('sparkle') : '') + esc(x.t) + '</button>').join('');
+    sugs.addEventListener('click', (e) => { const b = e.target.closest('.sug'); if (b) ask(b.dataset.q); });
   }
   if (history.length) history.forEach((m) => add(m.role === 'user' ? meHTML(m.text) : botHTML(m)));
 
-  // ask once how to address the user, and remember it
-  function addrPicker(where) {
-    const html = '<div class="addr"><span>' + icon('smile') + 'איך נוח לך שאפנה אליך?</span><div class="addr-opts">' +
-      '<button type="button" data-a="f">בלשון נקבה</button><button type="button" data-a="m">בלשון זכר</button><button type="button" data-a="n">בלי מגדר</button></div></div>';
-    let host;
-    if (where === 'hello') { $('p', empty).insertAdjacentHTML('afterend', html); host = $('.addr', empty); }
-    else { host = add('<div class="row bot">' + AV + '<div class="col">' + html + '</div></div>'); }
-    hydrateIcons(host);
-    host.addEventListener('click', (e) => {
-      const b = e.target.closest('[data-a]');
-      if (!b) return;
-      A.mem.set('addr', b.dataset.a);
-      const box = host.classList.contains('addr') ? host : $('.addr', host);
-      box.innerHTML = '<span>' + icon('check') + ({ f: 'סגור, אפנה אלייך בלשון נקבה.', m: 'סגור, אפנה אליך בלשון זכר.', n: 'סגור, אדבר בלי מגדר.' }[b.dataset.a]) + ' אפשר לשנות בכל רגע ב"הזיכרון שלי".</span>';
-      hydrateIcons(box);
-    });
-  }
-  if (A && !addr()) addrPicker(empty ? 'hello' : 'log');
+  // the form of address is guessed from the name (account.js) and can be changed in "הזיכרון שלי"
 
   // welcome back, with a thread to the last conversation (continuity keeps people coming back)
   if (!empty && history.length && away > 3 * 36e5) {
@@ -384,8 +379,9 @@
   });
   local.on((m) => {
     const on = m.state === 'ok' || m.state === 'busy';
-    status.textContent = m.state === 'busy' ? 'שחר כותב…' : on ? 'מחובר · רץ על המחשב הזה' : m.state === 'off' ? 'מצב מקורות בלבד' : 'עוזר ה-AI של המכללה';
-    if (dot) dot.className = 'st-dot' + (m.state === 'busy' ? ' busy' : on ? ' on' : '');
+    const eng = S.ai.which();
+    status.textContent = m.state === 'busy' ? 'שחר כותב…' : eng === 'claude' ? 'מחובר · Claude' : on ? 'מחובר · רץ על המחשב הזה' : m.state === 'off' ? 'מצב מקורות בלבד' : 'עוזר ה-AI של המכללה';
+    if (dot) dot.className = 'st-dot' + (m.state === 'busy' ? ' busy' : on || eng === 'claude' ? ' on' : '');
     conn.hidden = local.allowed();
   });
 
