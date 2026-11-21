@@ -19,6 +19,9 @@
     custom: { t: 'סגנון אישי', d: 'מספרים לשחר איך נוח לך, והוא מתאים את ההסבר', i: 'sparkle' },
   };
   const LET = ['א', 'ב', 'ג', 'ד', 'ה'];
+  const PRAISE = ['נכון!', 'בדיוק!', 'יפה מאוד!', 'בול.', 'מצוין!', 'יש!'];
+  const MISS = ['לא בדיוק.', 'כמעט.', 'קרוב, אבל לא.'];
+  const oneOf = (a) => a[Math.floor(Math.random() * a.length)];
   const GAME_SECONDS = 20;
 
   /* ---------- state, per user ---------- */
@@ -33,7 +36,12 @@
     L.days.streak = L.days.last === today(new Date(Date.now() - 864e5)) ? (L.days.streak || 0) + 1 : 1;
     L.days.last = t;
   }
-  function addXP(n) { L.xp = (L.xp || 0) + n; touchDay(); save(); }
+  L.log = L.log || {}; L.stats = L.stats || { answers: 0, correct: 0, games: 0, wins: 0, bestOpen: 0, units: 0 };
+  function addXP(n) {
+    L.xp = (L.xp || 0) + n; const t = today(); L.log[t] = (L.log[t] || 0) + n;
+    Object.keys(L.log).sort().slice(0, -60).forEach((k) => delete L.log[k]);
+    touchDay(); save();
+  }
   const nextUnit = (s) => { for (let u = 1; u <= 5; u++) if (!s.done.includes(u)) return u; return 0; };
 
   /* ---------- memory: what the model and the "what Shachar remembers" panel see ---------- */
@@ -68,21 +76,13 @@
     },
   });
 
+  S.learnData = { get: () => L, STYLES, nextUnit, byId, COURSES };
   if (!C) return; // the rest runs inside the chat only
 
 
   /* ---------- small helpers ---------- */
   // English inside Hebrew text: keep each English run left-to-right
-  function rich(s) {
-    // a run of English (with its own spaces, commas, hyphens, "= 0.05"), plus a final ./!/? only
-    // when it ends an English sentence; brackets and Hebrew punctuation stay outside the run
-    return esc(String(s).replace(/(?:-(?=[A-Za-z]))?[A-Za-z_](?:[A-Za-z0-9_ ,.;:'’=-]*[A-Za-z0-9_])?(?:-(?=[\s,)]|$))?(?:[.!?](?=["”״'\s]|$))?/g, (m) => {
-      // only a real English sentence keeps its final mark inside the run
-      if (/[.!?]$/.test(m) && (m.match(/[A-Za-z]{2,}/g) || []).length < 3) return '\u0001' + m.slice(0, -1) + '\u0002' + m.slice(-1);
-      return '\u0001' + m + '\u0002';
-    }))
-      .replace(/\u0001/g, '<span class="en" dir="ltr">').replace(/\u0002/g, '</span>');
-  }
+  const rich = S.rich; // English runs and math stay left-to-right inside Hebrew
   const shuffle = (a) => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
   const canLLM = () => local.state === 'ok' || local.state === 'busy';
   const kick = (c, u, extra) => '<div class="lx-kick">' + icon(c.icon) + '<span>' + esc(c.title) + (u ? ' · יחידה ' + u + ' מתוך 5' : '') + (extra ? ' · ' + esc(extra) : '') + '</span></div>';
@@ -97,6 +97,19 @@
     }).join('') + '</ol>';
   }
 
+  function confetti(row) {
+    if (S.reduced() || !row) return;
+    const card = $('.lx-card', row); if (!card) return;
+    const box = document.createElement('div'); box.className = 'cf'; box.setAttribute('aria-hidden', 'true');
+    const cols = ['#2b5cff', '#8a5cf6', '#ff5d8f', '#ff9a3c', '#22c55e', '#f5c400'];
+    for (let i = 0; i < 26; i++) {
+      const sp = document.createElement('i');
+      sp.style.cssText = '--x:' + (Math.random() * 100).toFixed(1) + '%;--dx:' + ((Math.random() - .5) * 160).toFixed(0) + 'px;--r:' + (Math.random() * 720 - 360).toFixed(0) + 'deg;--d:' + (Math.random() * .25).toFixed(2) + 's;background:' + cols[i % cols.length];
+      box.appendChild(sp);
+    }
+    card.appendChild(box); setTimeout(() => box.remove(), 1900);
+  }
+
   /* ---------- flows: one at a time ---------- */
   let flow = 0;
   const timers = new Set();
@@ -104,11 +117,11 @@
   const alive = (f) => f === flow;
 
   /* ---------- the local model as a tutor ---------- */
-  const TEACH = 'אתה "שחר", מורה פרטי סבלני וחם במכללה. כתוב בעברית פשוטה ותקנית, במשפטים קצרים, בלשון פנייה ניטרלית שלא מניחה מגדר (משפטים עם "אפשר" ו"כדאי"). ' +
+  const TEACH = 'אתה "שחר", מורה פרטי סבלני וחם במכללה. כתוב בעברית פשוטה ותקנית, במשפטים קצרים. ' +
     'אל תכתוב כותרות, רשימות ממוספרות או סימני Markdown. שמור על דיוק עובדתי, ואל תוסיף עובדות שלא הופיעו בחומר.';
   async function teach(prompt, max) {
     const prof = A.profileText();
-    return local.llm({ system: TEACH + (prof ? '\n\n' + prof : ''), messages: [{ role: 'user', content: prompt }], maxLength: max || 380, temperature: .35 });
+    return local.llm({ system: TEACH + ' ' + S.kb.addrRule(A.mem.get('addr', 'n')) + (prof ? '\n\n' + prof : ''), messages: [{ role: 'user', content: prompt }], maxLength: max || 380, temperature: .35 });
   }
 
   /* ---------- a multiple-choice question card ---------- */
@@ -136,7 +149,8 @@
         });
         const bar = $('.lx-timer', row); if (bar) bar.classList.add('stop');
         const ok = !!(pick && pick.ok);
-        if (o.e && !o.hideAnswer) card.insertAdjacentHTML('beforeend', '<p class="lx-exp ' + (ok ? 'good' : 'miss') + '">' + icon(ok ? 'check' : 'alert') + '<span><b>' + (ok ? 'נכון.' : n < 0 ? 'נגמר הזמן.' : 'לא בדיוק.') + '</b> ' + rich(o.e) + '</span></p>');
+        if (!o.hideAnswer) { L.stats.answers++; if (ok) L.stats.correct++; }
+        if (o.e && !o.hideAnswer) card.insertAdjacentHTML('beforeend', '<p class="lx-exp ' + (ok ? 'good' : 'miss') + '">' + icon(ok ? 'check' : 'alert') + '<span><b>' + (ok ? oneOf(PRAISE) : n < 0 ? 'נגמר הזמן.' : oneOf(MISS)) + '</b> ' + rich(o.e) + '</span></p>');
         if (o.pts && ok) card.insertAdjacentHTML('beforeend', '<span class="lx-pop">+' + o.pts() + ' XP</span>');
         hydrateIcons(card);
         if (C.atBottom() || row === C.log.lastElementChild) C.toBottom();
@@ -208,6 +222,7 @@
       '<div class="lx-score"><b>' + score + '<small>/5</small></b><span>רמה: <strong>' + esc(s.level) + '</strong></span></div>' +
       mapHTML(c, s, s.unit) + '</div>');
     C.persist(row, '[מבחן רמה ב' + c.title + ': ' + score + ' מתוך 5, רמה ' + s.level + ', מתחילים מיחידה ' + s.unit + ']');
+    if (score >= 3) confetti(row);
     chips();
     await C.say(s.known.length
       ? 'יפה. יחידות 1' + (s.known.length > 1 ? '–' + s.known.length : '') + ' כבר מוכרות לך, אז נתחיל מיחידה ' + s.unit + ': ' + c.units[s.unit - 1].t + '. אפשר לחזור ליחידות הקודמות בכל רגע.'
@@ -350,6 +365,7 @@
     const row = C.card('<div class="lx-card lx-result ' + (won ? 'win' : '') + '">' + kick(c, u, 'סוף המשחק') +
       '<div class="lx-score"><b>' + g.xp + '<small> XP</small></b><span>' + g.right + ' מתוך ' + pool.length + ' נכונות · רצף שיא ' + g.best + ' · ' + g.hearts + ' לבבות</span></div></div>');
     C.persist(row, '[משחק ביחידה ' + u + ': ' + g.right + ' מתוך ' + pool.length + ', ' + g.xp + ' XP]');
+    L.stats.games++; if (won) { L.stats.wins++; confetti(row); } save();
     return won;
   }
 
@@ -370,7 +386,7 @@
     let text = '';
     try {
       text = await teach('שאלה: ' + U.open.q + '\nנקודות שתשובה טובה כוללת:\n- ' + U.open.key.join('\n- ') + '\n\nתשובת הסטודנט: "' + ans + '"\n\n' +
-        'הערך את התשובה בהגינות ובעידוד. השורה הראשונה תהיה בדיוק בפורמט "ציון: X/10". אחריה כתוב 2 עד 3 משפטים: מה טוב בתשובה, ומה כדאי להוסיף או לדייק. כתוב בלשון ניטרלית: בלי "אתה" או "את" ובלי פעלים בזכר או בנקבה, למשל "התשובה מסבירה יפה…", "כדאי להוסיף…".', 260);
+        'הערך את התשובה בהגינות ובעידוד. השורה הראשונה תהיה בדיוק בפורמט "ציון: X/10". אחריה כתוב 2 עד 3 משפטים: מה טוב בתשובה, ומה כדאי להוסיף או לדייק.', 260);
     } catch { /* use the key points */ }
     th.remove();
     const m = text.match(/ציון\s*[:：]?\s*(\d{1,2})\s*(?:\/|מתוך)\s*10/) || text.match(/(\d{1,2})\s*\/\s*10/);
@@ -393,7 +409,7 @@
       '<p class="lx-sub">' + (g.mode === 'llm' ? 'מה כדאי שיופיע בתשובה:' : 'מה כדאי שיופיע בתשובה (סימנתי את מה שזיהיתי אצלך):') + '</p>' +
       '<ul class="lx-keys">' + U.open.key.map((k, i) => '<li class="' + (g.mode === 'keys' && g.covered[i] ? 'hit' : '') + '">' + icon(g.mode === 'keys' && g.covered[i] ? 'check' : 'sparkle') + '<span>' + rich(k) + '</span></li>').join('') + '</ul></div>');
     C.persist(res, '[משוב לשאלה הפתוחה: ' + g.score + '/10. ' + (g.text || '') + ']');
-    s.pos.open = g.score; save();
+    s.pos.open = g.score; L.stats.bestOpen = Math.max(L.stats.bestOpen || 0, g.score); save();
     return g.score >= 6;
   }
   async function mixed(id, u, f) {
@@ -413,7 +429,7 @@
   async function unitEnd(id, u, passed, f) {
     const c = byId(id), s = cs(id);
     if (passed) {
-      if (!s.done.includes(u)) s.done.push(u);
+      if (!s.done.includes(u)) { s.done.push(u); L.stats.units++; }
       s.pos = null; addXP(20);
       const nu = nextUnit(s);
       s.unit = nu || u; if (!nu) s.finished = true;
@@ -421,6 +437,7 @@
       if (s.finished) return finished(id, f);
       const row = C.card('<div class="lx-card lx-result win">' + kick(c, u, 'הושלמה') + '<div class="lx-score"><b>' + icon('check') + '</b><span>יחידה ' + u + ' הושלמה. ' + s.done.length + ' מתוך 5 בקורס.</span></div>' + mapHTML(c, s, nu) +
         '<div class="lx-actions"><button class="lx-btn" type="button" data-next>' + icon('play') + 'ליחידה ' + nu + '</button><button class="lx-ghost" type="button" data-pause>הפסקה, נמשיך אחר כך</button></div></div>');
+      confetti(row);
       const k = await new Promise((res) => row.addEventListener('click', (e) => { const b = e.target.closest('[data-next],[data-pause]'); if (b && !b.disabled) { lock(row, b); res(b.hasAttribute('data-next')); } }));
       if (!alive(f)) return;
       C.persist(row, '[יחידה ' + u + ' הושלמה]');
@@ -449,6 +466,7 @@
     const row = C.card('<div class="lx-card lx-result win lx-done-course">' + kick(c, 0, 'סיום') +
       '<div class="lx-score"><b>' + icon('trophy') + '</b><span>סיימת את ' + esc(c.title) + '! ' + (L.xp || 0) + ' XP בסך הכל.</span></div>' + mapHTML(c, s, 0) +
       '<div class="lx-actions"><button class="lx-btn" type="button" data-more>' + icon('book') + 'קורס נוסף</button><button class="lx-ghost" type="button" data-review>' + icon('refresh') + 'חזרה על הקורס מההתחלה</button></div></div>');
+    confetti(row);
     const k = await new Promise((res) => row.addEventListener('click', (e) => { const b = e.target.closest('[data-more],[data-review]'); if (b && !b.disabled) { lock(row, b); res(b.hasAttribute('data-more')); } }));
     if (!alive(f)) return;
     C.persist(row, '[סיים את הקורס ' + c.title + ']');
@@ -524,7 +542,13 @@
   /* ---------- boot ---------- */
   chips();
   const h = C.hello();
-  if (h) hello(h);
+  const params = new URLSearchParams(location.search);
+  if (params.has('learn')) {
+    const want = params.get('learn');
+    try { history.replaceState(null, '', location.pathname); } catch { /* ignore */ }
+    if (want && byId(want)) go(want); else openCourses();
+  }
+  else if (h) hello(h);
   else if (activeOpen()) resumeCard();
   hydrateIcons();
   S.learn = { openCourses, resume, go };

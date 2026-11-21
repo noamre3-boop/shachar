@@ -3,10 +3,10 @@
 <head>
 <meta charset="utf-8">
 <script>/* sign-in gate */try{if(!localStorage.getItem("shachar:session")){var p=location.pathname.split("/").pop()||"index.html";location.replace("login.html?next="+encodeURIComponent(p+location.search+location.hash))}}catch(e){}</script>
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content">
 <title>שאלו את שחר</title>
 <meta name="description" content="שיחה עם שחר, עוזר ה-AI והלמידה של המכללה.">
-<meta name="theme-color" content="#eaf1fb">
+<meta name="theme-color" content="#f4f7fc">
 <link rel="icon" href="assets/img/owl-face.webp">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -19,7 +19,6 @@
 <div class="sky sky-full" aria-hidden="true">
   <img class="sky-img" src="assets/img/sky-b.webp" alt="" fetchpriority="high">
   <div class="sky-sun"></div>
-  <span class="orb o1"></span><span class="orb o2"></span><span class="orb o3"></span>
 </div>
 
 <nav class="nav intro-fade" aria-label="ראשי">
@@ -31,7 +30,7 @@
     <div class="nav-links glass" id="nav-links">
       <a href="chat.html" aria-current="page"><i data-i="chat" class="ni"></i><span>שאלו את שחר</span></a>
       <a href="index.html" class="nav-home"><i data-i="home"></i><span>בית</span></a>
-      <a href="radar.html"><i data-i="target" class="ni"></i><span>רדאר והשפעה</span></a>
+      <a href="progress.html"><i data-i="cap" class="ni"></i><span>הקורסים שלי</span></a>
     </div>
     <div class="nav-end">
       <button class="menu-btn" type="button" aria-controls="nav-links" aria-expanded="false" aria-label="תפריט"><i data-i="threads"></i></button>
@@ -40,30 +39,38 @@
 </nav>
 
 <main class="chat-stage" id="main">
-  <section class="lg-chat intro-rise" data-chat aria-label="שיחה עם שחר">
-    <header class="lg-head" data-head>
-      <div class="lg-who"><img src="assets/img/owl-face.webp" alt=""><div><b>שחר</b><small data-status>עוזר ה-AI של המכללה</small></div></div>
-      <button class="lg-new" type="button" data-clear><i data-i="edit"></i><span>שיחה חדשה</span></button>
-    </header>
-
+  <section class="lg-chat" data-chat aria-label="שיחה עם שחר">
     <div class="lg-log" data-log role="log" aria-live="polite" aria-relevant="additions" data-lenis-prevent>
       <div class="hello" data-empty>
-        <div class="owl3d float"><img src="assets/img/owl.webp" alt="שחר" data-poster></div>
+        <div class="hello-owl owl-live" data-owl aria-hidden="true">
+          <div class="owl-tilt">
+            <img class="owl-body" src="assets/img/owl-noeyes.webp" alt="" width="400" height="400">
+            <span class="owl-eye" style="--x:40%"></span>
+            <span class="owl-eye" style="--x:59.9%"></span>
+            <span class="owl-sheen"></span>
+          </div>
+        </div>
         <h1>היי, אני שחר.</h1>
         <p>אפשר לשאול אותי כל דבר: על הלימודים, על החומר, על התקנון, או סתם להתייעץ. אפשר גם ללמוד איתי קורס קצר, בקצב ובסגנון שלך.</p>
         <div class="sugs" data-sugs></div>
       </div>
     </div>
 
-    <form class="lg-compose" data-form autocomplete="off">
-      <div class="pii" data-pii hidden><i data-i="shield"></i><span>הסתרתי פרטים מזהים מההודעה. אין צורך לשתף אותם כאן.</span></div>
-      <label class="sr-only" for="q">הודעה לשחר</label>
-      <textarea id="q" data-input rows="1" placeholder="כתבו לשחר…"></textarea>
-      <button class="lg-send" type="submit" data-send aria-label="שליחה"><i data-i="arrowL"></i></button>
-      <button class="lg-send stop" type="button" data-stop aria-label="עצירה" hidden><i data-i="stop"></i></button>
-    </form>
+    <div class="lg-dock">
+      <form class="lg-compose intro-rise d1" data-form autocomplete="off">
+        <div class="pii" data-pii hidden><i data-i="shield"></i><span>הסתרתי פרטים מזהים מההודעה. אין צורך לשתף אותם כאן.</span></div>
+        <label class="sr-only" for="q">הודעה לשחר</label>
+        <textarea id="q" data-input rows="1" placeholder="כתבו לשחר…"></textarea>
+        <button class="lg-send" type="submit" data-send aria-label="שליחה"><i data-i="arrowL"></i></button>
+        <button class="lg-send stop" type="button" data-stop aria-label="עצירה" hidden><i data-i="stop"></i></button>
+      </form>
+      <div class="chat-note">
+        <span class="st"><i class="st-dot" data-dot></i><span data-status>עוזר ה-AI של המכללה</span></span>
+        <button class="lg-new" type="button" data-clear><i data-i="edit"></i><span>שיחה חדשה</span></button>
+        <span class="note-fine">שחר יכול לטעות. בכללי המכללה הוא מסתמך רק על המקורות הרשמיים. כשמחברים מודל מקומי, השיחה רצה על המחשב שלך.</span>
+      </div>
+    </div>
   </section>
-  <p class="chat-note">שחר יכול לטעות. בכללי המכללה הוא מסתמך רק על המקורות הרשמיים. כשמחברים מודל מקומי, השיחה רצה על המחשב שלך. </p>
 </main>
 
 <dialog class="dlg" id="handoff" aria-labelledby="ho-h">

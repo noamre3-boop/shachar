@@ -188,6 +188,8 @@
     d.innerHTML = '<div class="dlg-in" data-lenis-prevent>' +
       '<div class="dlg-head"><h2 id="me-h">מה שחר זוכר</h2><button class="round-btn" type="button" data-close aria-label="סגירה">' + icon('x') + '</button></div>' +
       '<div class="me-who">' + avatarHTML(46) + '<div><b>' + esc(me.guest ? 'אורח' : (me.name || firstName())) + '</b><small>' + esc(me.guest ? 'בלי חשבון · הזיכרון נשמר במכשיר הזה בלבד' : (me.email ? me.email + ' · ' : '') + 'מחובר עם Google') + '</small></div></div>' +
+      '<h3 class="me-h3">' + icon('smile') + 'איך לפנות אליך</h3>' +
+      '<div class="me-addr" data-addr>' + [['f', 'בלשון נקבה'], ['m', 'בלשון זכר'], ['n', 'בלי מגדר']].map(([k, t]) => '<button type="button" data-a="' + k + '" aria-pressed="' + (mem.get('addr', 'n') === k) + '">' + t + '</button>').join('') + '</div>' +
       '<h3 class="me-h3">' + icon('brain') + 'דברים שביקשת שאזכור</h3>' +
       (notes.length ? '<ul class="me-notes">' + notes.map((n, i) => '<li><span>' + esc(n.t) + '</span><button type="button" data-del="' + i + '" aria-label="מחיקה">' + icon('x') + '</button></li>').join('') + '</ul>'
         : '<p class="me-empty">עוד אין כאן כלום. אפשר לכתוב לשחר "תזכור ש…", או להוסיף כאן.</p>') +
@@ -199,6 +201,7 @@
     hydrateIcons(d);
     $('[data-close]', d).addEventListener('click', () => d.close());
     $$('[data-del]', d).forEach((b) => b.addEventListener('click', () => { mem.removeNote(+b.dataset.del); openPanel(); }));
+    $$('[data-addr] [data-a]', d).forEach((b) => b.addEventListener('click', () => { mem.set('addr', b.dataset.a); openPanel(); toast('מעכשיו כך אפנה אליך'); }));
     $('[data-add]', d).addEventListener('submit', (e) => { e.preventDefault(); if (mem.addNote(e.target.t.value)) { toast('אזכור את זה'); openPanel(); } });
     $('[data-forget]', d).addEventListener('click', () => {
       if (!confirm('למחוק את כל מה ששחר זוכר עליך? זה כולל את השיחות, ההערות וההתקדמות בקורסים, ואי אפשר לבטל.')) return;

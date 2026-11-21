@@ -952,3 +952,7 @@ html.motion-off .rv { opacity: 1; transform: none; }
   .me-name { display: none; }
   .me-chip { width: 40px; padding: 0; justify-content: center; }
 }
+
+.me-addr { display: inline-flex; gap: 4px; padding: 3px; border-radius: 999px; background: var(--ink-05); }
+.me-addr button { border: 0; border-radius: 999px; padding: 6px 12px; font: 600 13px/1.2 var(--f); background: transparent; color: var(--ink-70); }
+.me-addr button[aria-pressed="true"] { background: #fff; color: #000; box-shadow: 0 1px 3px rgba(0, 0, 0, .12); }
