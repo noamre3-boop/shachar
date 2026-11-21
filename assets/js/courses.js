@@ -270,3 +270,10 @@ window.SHACHAR_COURSES = [
     ],
   },
 ];
+
+// The lessons double as study material for the open chat: a question like "what is a median"
+// is answered from the lesson instead of from the model's guesswork.
+window.SHACHAR_KB = (window.SHACHAR_KB || []).concat(window.SHACHAR_COURSES.map((c) => ({
+  id: 'course-' + c.id, title: c.title, kind: 'חומר לימוד', course: true,
+  sections: c.units.map((u) => ({ h: u.t, t: u.lesson + ' ' + u.tip })),
+})));

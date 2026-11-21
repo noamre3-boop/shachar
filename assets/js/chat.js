@@ -45,7 +45,7 @@
   function add(html) { clearHello(); log.insertAdjacentHTML('beforeend', html); const el = log.lastElementChild; hydrateIcons(el); toBottom(); return el; }
   const AV = '<img class="av" src="assets/img/owl-face.webp" alt="">';
   const meHTML = (t) => '<div class="row me"><div class="bubble">' + esc(t) + '</div></div>';
-  const validTo = (d) => (d.source ? 'אתר המכללה · נבדק ' + d.checked.split('-').reverse().join('.') : d.validTo ? 'בתוקף עד ' + d.validTo.split('-').reverse().join('.') : '');
+  const validTo = (d) => (d.course ? 'חומר הקורס' : d.source ? 'אתר המכללה · נבדק ' + d.checked.split('-').reverse().join('.') : d.validTo ? 'בתוקף עד ' + d.validTo.split('-').reverse().join('.') : '');
   function extrasHTML(m) {
     const src = (m.hits || []).length ? '<details class="srcs-toggle"><summary class="mbtn" style="list-style:none;cursor:pointer">' + icon('book') + 'מקורות (' + m.hits.length + ')</summary><div class="srcs" style="margin-top:6px">' +
       m.hits.map((h) => '<details><summary>' + icon('file') + '<span>' + esc(h.title) + ' · ' + esc(h.h) + '</span><span class="v">' + esc(h.valid) + '</span></summary><p>' + esc(h.t) + '</p></details>').join('') + '</div></details>' : '';
