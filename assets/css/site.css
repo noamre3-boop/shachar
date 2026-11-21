@@ -1011,3 +1011,13 @@ html[dir="ltr"] .set-row[aria-checked="true"] .sw-ui::after { transform: transla
 @keyframes owlShake { 20%, 60% { transform: rotate(-9deg); } 40%, 80% { transform: rotate(9deg); } }
 .owl-live.hop .owl-tilt { animation: owlHop .7s var(--ease); }
 html.motion-off .owl-live.hop .owl-tilt { animation: none; }
+
+/* ---- phone polish (demo round) ---- */
+.constel .node.hot { z-index: 5; } /* the three core systems and their names stay on top of the small icons */
+@media (max-width: 560px) {
+  /* the demo tabs: all four visible, two rows, nothing cut off */
+  .tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); overflow: visible; border-radius: 20px; gap: 4px; }
+  .tab { flex: initial; min-width: 0; padding: 6px 8px; white-space: nowrap; }
+  /* stacked chat cards: the cards behind rise above the stack, so keep them off the text */
+  .stack { margin-top: 64px; }
+}

@@ -629,13 +629,51 @@
   const CRISIS = /להתאבד|התאבדות|לפגוע בעצמי|לא רוצה לחיות|אין טעם לחיות|לשים קץ|רוצה למות|בא לי למות|לסיים את החיים/;
   const CRISIS_TEXT = 'אני כאן, ותודה ששיתפת. נשמע שקשה לך מאוד עכשיו, ומגיע לך לא להיות עם זה לבד. אפשר לדבר עכשיו עם ער"ן בטלפון 1201, הם זמינים 24/7, ובמצב חירום להתקשר למד"א 101. גם דיקנאט הסטודנטים במכללה כאן בשבילך.';
   const clean = (q) => String(q).replace(/\[[^\]]*\]/g, '').trim();
+  /* Without Claude, the small local model is weak in Hebrew and may invent rules. So on the local engine:
+     college facts come word for word from the official passage, course concepts from the lesson,
+     feelings get a hand-written warm reply, and a college question with no source gets an honest "I don't know"
+     instead of a guess. Only open, general talk goes to the local model. */
+  const FACTS = /מכלל|מועד|בחינ|מבחן|ציון|ערעור|תקנון|שכר לימוד|מלג|הרשמ|מזכירות|סמסטר|חופש|נוכחות|דיקן|דיקנאט|מילואים|התאמ|נגישות|ספרי|קליניקה|פקולט|רכזת|תואר|נקודות זכות|לוח השנה|שעות פתיחה|טופס|אישור|קמפוס|חניה|מעונות|דמי|קבלה ל|תעודה/;
+  const NEG = /לחוץ|לחוצה|בלחץ|לחץ|עצוב|עצובה|קשה לי|מתוסכל|מתוסכלת|תסכול|מפחד|מפחדת|פחד|חרדה|חרד|בודד|בודדה|עייף|עייפה|שחוק|שחוקה|מיואש|מיואשת|נכשלתי|אין לי כוח|לא מצליח|לא מצליחה|מבואס|מבואסת/;
+  const POS = /שמח|שמחה|התרגשתי|הצלחתי|עברתי את/;
+  function grounded(q, hits, a) {
+    const g3 = (f, m, n) => (a === 'f' ? f : a === 'm' ? m : n);
+    const off = hits.filter((h) => !h.doc.course), crs = hits.filter((h) => h.doc.course);
+    if (NEG.test(q)) {
+      const sup = search('דיקנאט הסטודנטים סיוע רגשי', 1);
+      return { mode: 'warm', hits: sup, text: g3(
+        'נשמע שזה באמת מכביד עלייך עכשיו, ואת ממש לא לבד בזה. צעד קטן אחד: לבחור משימה אחת בלבד, לעבוד עליה 25 דקות עם טיימר, ואז הפסקה קצרה. ואם זה ממשיך להכביד, דיקנאט הסטודנטים נותן גם סיוע רגשי, וכדאי לפנות אליהם מוקדם. מה הכי לוחץ עלייך כרגע?',
+        'נשמע שזה באמת מכביד עליך עכשיו, ואתה ממש לא לבד בזה. צעד קטן אחד: לבחור משימה אחת בלבד, לעבוד עליה 25 דקות עם טיימר, ואז הפסקה קצרה. ואם זה ממשיך להכביד, דיקנאט הסטודנטים נותן גם סיוע רגשי, וכדאי לפנות אליהם מוקדם. מה הכי לוחץ עליך כרגע?',
+        'נשמע שזה באמת מכביד עכשיו, וזה קורה להמון סטודנטים. צעד קטן אחד: לבחור משימה אחת בלבד, לעבוד עליה 25 דקות עם טיימר, ואז הפסקה קצרה. ואם זה ממשיך להכביד, דיקנאט הסטודנטים נותן גם סיוע רגשי, וכדאי לפנות אליהם מוקדם. מה הכי לוחץ כרגע?') };
+    }
+    if (POS.test(q) && !FACTS.test(q)) {
+      return { mode: 'warm', hits: [], text: g3('איזה כיף לשמוע! מגיע לך להתגאות בזה. מה עזר לך הכי הרבה? שווה לזכור את זה לפעם הבאה.', 'איזה כיף לשמוע! מגיע לך להתגאות בזה. מה עזר לך הכי הרבה? שווה לזכור את זה לפעם הבאה.', 'איזה כיף לשמוע! יש במה להתגאות. מה עזר הכי הרבה? שווה לזכור את זה לפעם הבאה.') };
+    }
+    if (crs.length && (!off.length || crs[0].score >= off[0].score)) {
+      const h = crs[0];
+      return { mode: 'extract', hits: [h], text: 'מתוך הקורס "' + h.doc.title + '", ביחידה "' + h.h + '":\n\n' + h.t + '\n\n' + g3('רוצה לתרגל את זה? אפשר לפתוח את הקורס בכפתור "קורסים" למטה.', 'רוצה לתרגל את זה? אפשר לפתוח את הקורס בכפתור "קורסים" למטה.', 'אפשר לתרגל את זה בכפתור "קורסים" למטה.') };
+    }
+    if (off.length && off[0].score >= 18) {
+      const top = off[0];
+      const use = [top].concat(off.slice(1).filter((h) => h.doc === top.doc && h.score >= top.score * .75).slice(0, 1));
+      return { mode: 'extract', hits: use, text: 'לפי המידע הרשמי של המכללה (' + top.doc.title + '):\n\n' + use.map((h) => h.t).join('\n\n') };
+    }
+    if (FACTS.test(q)) {
+      return { mode: 'honest', hits: [], text: g3(
+        'את התשובה המדויקת לזה אין לי כרגע במקורות הרשמיים של המכללה, ואני לא רוצה לנחש בעניין שחשוב לך. רכזת הפקולטה יכולה לענות בוודאות: לחיצה על "העברה לרכזת" תפתח לה פנייה עם השאלה שלך.',
+        'את התשובה המדויקת לזה אין לי כרגע במקורות הרשמיים של המכללה, ואני לא רוצה לנחש בעניין שחשוב לך. רכזת הפקולטה יכולה לענות בוודאות: לחיצה על "העברה לרכזת" תפתח לה פנייה עם השאלה שלך.',
+        'את התשובה המדויקת לזה אין לי כרגע במקורות הרשמיים של המכללה, ואני לא רוצה לנחש בעניין חשוב. רכזת הפקולטה יכולה לענות בוודאות: לחיצה על "העברה לרכזת" פותחת לה פנייה עם השאלה.') };
+    }
+    return null;
+  }
   /** history: [{role:'user'|'assistant', content}] earlier turns; q: the new message. */
   async function converse(history, q, opts) {
     opts = opts || {};
     const hits = search(q, 3);
     const crisis = CRISIS.test(q);
+    if (!crisis && !opts.free && ai.which() !== 'claude') { const gr = grounded(q, hits, opts.addr); if (gr) return { ...gr, crisis: false }; }
     const ctx = hits.length ? 'מידע שנשלף (השתמש רק אם רלוונטי):\n' + hits.map((h, i) => '[' + (i + 1) + '] ' + (h.doc.course ? 'חומר לימוד · ' : 'מידע רשמי מהמכללה · ') + h.doc.title + ' / ' + h.h + ': ' + h.t).join('\n') + '\n\n' : '';
-    const messages = (history || []).slice(-12).map((m) => ({ role: m.role, content: clean(m.content).slice(0, 1500) }))
+    const messages = (history || []).slice(ai.which() === 'claude' ? -12 : -2).map((m) => ({ role: m.role, content: clean(m.content).slice(0, 1500) }))
       .concat([{ role: 'user', content: ctx + clean(q) }]);
     // persona + form of address + per-user memory (name, notes, what they are learning)
     const system = systemParts({ addr: opts.addr, emo: opts.emo || EMO.test(q), profile: opts.profile });
