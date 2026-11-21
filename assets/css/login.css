@@ -1,0 +1,67 @@
+/* ==========================================================================
+   שחר — opening screen: living sky, the live owl, one glass card
+   ========================================================================== */
+.login-page { min-height: 100vh; min-height: 100dvh; background: #eef3fb; overflow-x: hidden; }
+.login-page .sky.sky-full { position: fixed; inset: 0; height: 100vh; height: 100lvh; -webkit-mask-image: none; mask-image: none; }
+.login-page .sky.sky-full::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, rgba(255, 255, 255, 0) 35%, rgba(255, 255, 255, .55) 100%); }
+
+.login {
+  position: relative; z-index: 2; min-height: 100vh; min-height: 100dvh;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 84px 16px 36px; text-align: center;
+}
+.login-brand { position: absolute; top: 22px; inset-inline-start: clamp(16px, 4vw, 40px); display: flex; align-items: center; gap: 10px; color: #000; }
+
+.login-owl { position: relative; z-index: 3; width: 196px; height: 196px; margin-bottom: -40px; }
+.login-card {
+  position: relative; z-index: 2; width: min(420px, 100%); padding: 50px 28px 22px; border-radius: 30px;
+  background: linear-gradient(160deg, rgba(255, 255, 255, .55), rgba(255, 255, 255, .28));
+  border: 1px solid rgba(255, 255, 255, .85);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .95), 0 40px 100px -40px rgba(24, 48, 110, .55), 0 2px 10px -4px rgba(24, 48, 110, .18);
+  -webkit-backdrop-filter: blur(24px) saturate(170%); backdrop-filter: blur(24px) saturate(170%);
+}
+.login-card h1 { font-size: 30px; font-weight: 750; letter-spacing: -.02em; line-height: 1.2; color: #0a1630; }
+.login-card > p { margin-top: 8px; font-size: 15.5px; line-height: 1.6; color: rgba(10, 22, 48, .72); }
+
+.g-btn {
+  margin-top: 22px; width: 100%; height: 52px; display: flex; align-items: center; justify-content: center; gap: 12px;
+  border: 0; border-radius: 16px; background: #fff; color: #1f1f1f; font: 600 16px/1 var(--f);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, .09), 0 12px 28px -16px rgba(24, 48, 110, .55);
+  transition: transform .2s var(--ease), box-shadow .2s;
+}
+.g-btn:hover { transform: translateY(-1px); box-shadow: 0 0 0 1px rgba(0, 0, 0, .14), 0 16px 34px -16px rgba(24, 48, 110, .65); }
+.g-btn:active { transform: scale(.985); }
+.g-btn svg { width: 20px; height: 20px; flex: none; }
+.g-btn.busy { pointer-events: none; opacity: .75; }
+.g-btn.busy svg { animation: gspin 1s linear infinite; }
+@keyframes gspin { to { transform: rotate(360deg); } }
+
+.or { display: flex; align-items: center; gap: 12px; margin: 16px 0 12px; color: rgba(10, 22, 48, .45); font-size: 13px; }
+.or::before, .or::after { content: ""; flex: 1; height: 1px; background: rgba(10, 22, 48, .12); }
+.guest-btn {
+  width: 100%; height: 46px; border: 0; border-radius: 14px; color: #0a1630; font: 600 15px/1 var(--f);
+  background: rgba(255, 255, 255, .42); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .9);
+  transition: background-color .2s;
+}
+.guest-btn:hover { background: rgba(255, 255, 255, .75); }
+.login-card .fine { margin-top: 16px; font-size: 12.5px; line-height: 1.55; color: rgba(10, 22, 48, .56); }
+
+.login-feats { list-style: none; display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin: 22px 0 0; padding: 0; max-width: 560px; }
+.login-feats li {
+  display: inline-flex; align-items: center; gap: 7px; padding: 8px 13px; border-radius: 999px;
+  font-size: 13px; font-weight: 550; color: #0a1630;
+  background: rgba(255, 255, 255, .45); box-shadow: inset 0 0 0 1px rgba(255, 255, 255, .85);
+  -webkit-backdrop-filter: blur(12px); backdrop-filter: blur(12px);
+}
+.login-feats svg { width: 15px; height: 15px; }
+.login-credit { position: absolute; bottom: 12px; inset-inline: 16px; font-size: 12px; color: rgba(10, 22, 48, .55); text-shadow: 0 1px 8px rgba(255, 255, 255, .8); }
+
+@media (max-width: 520px) {
+  .login { padding: 70px 14px 44px; justify-content: flex-start; }
+  .login-brand { top: 16px; }
+  .login-owl { width: 150px; height: 150px; margin-top: 8px; margin-bottom: -30px; }
+  .login-card { padding: 40px 20px 18px; border-radius: 26px; }
+  .login-card h1 { font-size: 25px; }
+  .login-card > p { font-size: 14.5px; }
+  .login-feats li { font-size: 12.5px; padding: 7px 11px; }
+}
