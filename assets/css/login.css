@@ -3,7 +3,7 @@
    a clean form beside him (one third, on the left)
    ========================================================================== */
 .login-page { min-height: 100vh; min-height: 100dvh; background: #fff; }
-.ln { display: grid; grid-template-columns: minmax(0, 2fr) minmax(400px, 1fr); min-height: 100vh; min-height: 100dvh; }
+.ln { display: grid; grid-template-columns: minmax(400px, 1fr) minmax(0, 2fr); min-height: 100vh; min-height: 100dvh; }
 
 /* form side */
 .ln-form { position: relative; isolation: isolate; display: flex; flex-direction: column; padding: 28px clamp(24px, 3.4vw, 56px) 22px; }
@@ -47,7 +47,7 @@
 .ln-art {
   --floor: 70%;
   --owl: min(53cqh, 41cqw);
-  position: relative; order: -1; container-type: size; margin: 14px; margin-inline-end: 0; border-radius: 32px; overflow: hidden; isolation: isolate;
+  position: relative; container-type: size; margin: 14px; margin-inline-start: 0; border-radius: 32px; overflow: hidden; isolation: isolate;
   background:
     radial-gradient(70% 60% at 50% 46%, #ffffff 0%, rgba(255, 255, 255, 0) 72%),
     linear-gradient(180deg, #edf1f7 0%, #f3f6fa var(--floor), #e3e9f1 var(--floor), #eef2f7 100%);
@@ -70,10 +70,11 @@
 .ln-badge img { width: 56%; height: auto; margin-inline-start: 6%; filter: saturate(1.05); }
 
 @media (max-width: 1100px) {
-  .ln { grid-template-columns: minmax(0, 1.5fr) minmax(380px, 1fr); }
+  .ln { grid-template-columns: minmax(380px, 1fr) minmax(0, 1.5fr); }
 }
 @media (max-width: 860px) {
   .ln { grid-template-columns: 1fr; grid-template-rows: auto 1fr; }
+  .ln-art { order: -1; }
   .ln-art { --floor: 72%; --owl: min(61cqh, 72cqw); margin: 10px; height: 46vh; min-height: 330px; border-radius: 26px; }
   .ln-form { position: static; isolation: auto; padding: 6px 20px 18px; }
   .ln-form::before { display: none; }
