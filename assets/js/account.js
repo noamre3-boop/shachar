@@ -145,8 +145,11 @@
   /* ---------------- opening screen ---------------- */
   function loginPage(root) {
     if (me) { location.replace(nextPage()); return; }
-    fb().then((f) => f.A.getRedirectResult(f.auth)).then((r) => { if (r && r.user) { session.set(fromUser(r.user)); location.replace(nextPage()); } }).catch(() => { /* shown on click */ });
-    $('[data-google]', root).addEventListener('click', (e) => signIn(e.currentTarget));
+    const gBtn = $('[data-google]', root);
+    if (gBtn) { // the public copy has guest entry only, so it never loads the sign-in SDK
+      fb().then((f) => f.A.getRedirectResult(f.auth)).then((r) => { if (r && r.user) { session.set(fromUser(r.user)); location.replace(nextPage()); } }).catch(() => { /* shown on click */ });
+      gBtn.addEventListener('click', (e) => signIn(e.currentTarget));
+    }
     $('[data-guest]', root).addEventListener('click', guest);
     S.owlLive($('[data-owl]', root));
   }
