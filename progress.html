@@ -2,80 +2,14 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-ixPabG2aM67sQRJ88ETfoblmKFh5woEoTe0UwuYcjms=' https://www.gstatic.com https://apis.google.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.googleusercontent.com; connect-src 'self' https://*.googleapis.com https://*.firebaseapp.com https://apis.google.com http://127.0.0.1:5180 http://127.0.0.1:8188 http://localhost:8188 http://127.0.0.1:8000; frame-src https://solid-oxygen-zk9gj.firebaseapp.com https://accounts.google.com https://apis.google.com; worker-src 'self' blob:; media-src 'self' data: blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
-<meta name="referrer" content="strict-origin-when-cross-origin">
-<script>/* sign-in gate */try{if(!localStorage.getItem("shachar:session")){var p=location.pathname.split("/").pop()||"index.html";location.replace("login.html?next="+encodeURIComponent(p+location.search+location.hash))}}catch(e){}</script>
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>הקורסים שלי · שחר</title>
-<meta name="description" content="ההתקדמות שלך בקורסים של שחר: רמה, יחידות, רצף ימים, נקודות והישגים.">
-<meta name="theme-color" content="#f3f5fd">
-<link rel="icon" href="assets/img/owl-face.webp">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;500;600;700;800&family=Inter:opsz,wght@14..32,400..700&display=swap">
-<link rel="stylesheet" href="assets/css/site.css">
-<link rel="stylesheet" href="assets/css/progress.css">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>שחר עבר לכתובת חדשה</title>
+<meta name="robots" content="noindex">
+<link rel="canonical" href="https://shachar-ai.web.app/progress.html">
+<meta http-equiv="refresh" content="0; url=https://shachar-ai.web.app/progress.html">
+<script>location.replace("https://shachar-ai.web.app/progress.html" + location.search + location.hash);</script>
 </head>
-<body class="pg-page">
-<a class="skip" href="#main">דילוג לתוכן</a>
-
-<nav class="nav intro-fade" aria-label="ראשי">
-  <div class="wrap"><div class="container nav-in">
-    <a class="brand" href="index.html" aria-label="שחר · המכללה, לדף הבית">
-      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true"><circle cx="16" cy="2.9" r="1.7"/><path d="M16 4.4v4" stroke="#000" stroke-width="1.6"/><path d="M4.2 6.2 9.6 9.4a13 13 0 0 1 12.8 0l5.4-3.2V19a11.8 11.8 0 0 1-23.6 0z"/><rect x="7.6" y="12.2" width="16.8" height="10.6" rx="5.3" fill="#fff"/><ellipse cx="12.7" cy="17.5" rx="1.9" ry="2.2"/><ellipse cx="19.3" cy="17.5" rx="1.9" ry="2.2"/></svg>
-      <span style="display:flex;align-items:center;gap:9px"><span class="brand-word">שחר</span></span>
-    </a>
-    <div class="nav-links glass" id="nav-links">
-      <a href="chat.html"><i data-i="chat" class="ni"></i><span>שאלו את שחר</span></a>
-      <a href="index.html" class="nav-home"><i data-i="home"></i><span>בית</span></a>
-      <a href="progress.html" aria-current="page"><i data-i="cap" class="ni"></i><span>הקורסים שלי</span></a>
-    </div>
-    <div class="nav-end">
-      <button class="menu-btn" type="button" aria-controls="nav-links" aria-expanded="false" aria-label="תפריט"><i data-i="threads"></i></button>
-    </div>
-  </div></div>
-</nav>
-
-<main id="main">
-  <header class="pg-hero">
-    <div class="pg-glow" aria-hidden="true"><i></i><i></i><i></i></div>
-    <div class="wrap"><div class="container pg-hero-in">
-      <div class="pg-who intro-rise" data-who></div>
-      <div class="pg-kpis intro-rise d1" data-kpis></div>
-    </div></div>
-  </header>
-
-  <div class="wrap"><div class="container pg-body">
-    <section class="pg-sec" aria-labelledby="h-week">
-      <div class="pg-sec-head"><h2 id="h-week">השבוע שלי</h2><span class="pg-sub" data-week-sub></span></div>
-      <div class="pg-week" data-week></div>
-    </section>
-
-    <section class="pg-sec" aria-labelledby="h-courses">
-      <div class="pg-sec-head"><h2 id="h-courses">הקורסים שלי</h2><a class="pg-link" href="chat.html?learn=">כל הקורסים בצ׳אט</a></div>
-      <div class="pg-courses" data-courses></div>
-    </section>
-
-    <section class="pg-sec" aria-labelledby="h-badges">
-      <div class="pg-sec-head"><h2 id="h-badges">הישגים</h2><span class="pg-sub" data-badge-sub></span></div>
-      <div class="pg-badges" data-badges></div>
-    </section>
-
-    <section class="pg-sec" aria-labelledby="h-mem">
-      <div class="pg-sec-head"><h2 id="h-mem">מה שחר זוכר עליי</h2><button class="pg-link" type="button" data-open-mem>ניהול הזיכרון</button></div>
-      <div class="pg-mem" data-mem></div>
-    </section>
-  </div></div>
-</main>
-
-<footer class="pg-foot"><a class="by-noam" href="https://github.com/noamre3-boop" target="_blank" rel="noopener noreferrer" dir="ltr">by Noam</a> · 
-  <p>ההתקדמות נשמרת במכשיר הזה, תחת החשבון שלך.</p>
-</footer>
-
-<script src="assets/js/core.js"></script>
-<script src="assets/js/account.js"></script>
-<script src="assets/js/courses.js"></script>
-<script src="assets/js/learn.js"></script>
-<script src="assets/js/progress.js"></script>
+<body style="font-family:system-ui,sans-serif;text-align:center;padding:48px 16px">
+<p>שחר עבר לכתובת חדשה: <a href="https://shachar-ai.web.app/progress.html">shachar-ai.web.app</a></p>
 </body>
 </html>
