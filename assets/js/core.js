@@ -696,6 +696,7 @@
     $$('.dlg-in, .chan-log, .tbl-wrap, .drawer-body, .model-pop').forEach((el) => el.setAttribute('data-lenis-prevent', ''));
     const s = document.createElement('script');
     s.src = 'https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js';
+    s.integrity = 'sha384-B2WBjDzEjJpYvhmi2UyEn7rektqkf5suS6sNoyyrf0EBAwBHdkiXxIlU0V5Ru2ed'; s.crossOrigin = 'anonymous';
     s.onload = () => {
       if (!window.Lenis) return;
       lenis = new window.Lenis({ lerp: calm() ? .1 : .075, wheelMultiplier: .95, smoothWheel: true, syncTouch: false });

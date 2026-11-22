@@ -2,6 +2,8 @@
 <html lang="he" dir="rtl">
 <head>
 <meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'sha256-ixPabG2aM67sQRJ88ETfoblmKFh5woEoTe0UwuYcjms=' https://www.gstatic.com https://apis.google.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data: blob: https://*.googleusercontent.com; connect-src 'self' https://*.googleapis.com https://*.firebaseapp.com https://apis.google.com http://127.0.0.1:5180 http://127.0.0.1:8188 http://localhost:8188 http://127.0.0.1:8000; frame-src https://solid-oxygen-zk9gj.firebaseapp.com https://accounts.google.com https://apis.google.com; worker-src 'self' blob:; media-src 'self' data: blob:; manifest-src 'self'; object-src 'none'; base-uri 'self'; form-action 'self'">
+<meta name="referrer" content="strict-origin-when-cross-origin">
 <script>/* sign-in gate */try{if(!localStorage.getItem("shachar:session")){var p=location.pathname.split("/").pop()||"index.html";location.replace("login.html?next="+encodeURIComponent(p+location.search+location.hash))}}catch(e){}</script>
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>שחר</title>
@@ -278,6 +280,7 @@
   <div class="peek" data-peek aria-hidden="true"><img src="assets/img/owl.webp" alt="" loading="lazy"></div>
   <div class="foot-bar wrap">
     <div class="container foot-in">
+      <a class="by-noam" href="https://github.com/noamre3-boop" target="_blank" rel="noopener noreferrer" dir="ltr">by Noam</a>
       <p>שחר · אב-טיפוס להמחשה. כל הנתונים באתר סינתטיים.</p>
       <nav aria-label="תחתון"><a href="chat.html">שאלו את שחר</a><a href="progress.html">הקורסים שלי</a><button class="link-u" type="button" data-open-faq style="font-size:14px;text-decoration:none">שאלות נפוצות</button></nav>
     </div>

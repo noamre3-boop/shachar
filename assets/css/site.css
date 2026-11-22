@@ -1021,3 +1021,12 @@ html.motion-off .owl-live.hop .owl-tilt { animation: none; }
   /* stacked chat cards: the cards behind rise above the stack, so keep them off the text */
   .stack { margin-top: 64px; }
 }
+
+/* signature */
+.by-noam {
+  font-family: Inter, system-ui, sans-serif; font-weight: 650; font-size: 12.5px; letter-spacing: .01em; text-decoration: none;
+  unicode-bidi: isolate; white-space: nowrap;
+  background: linear-gradient(90deg, #2b5cff, #8a5cf6 60%, #d34cc2); -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.by-noam:hover { filter: brightness(1.15); }
+.by-noam:focus-visible { outline: 2px solid #2b5cff; outline-offset: 2px; border-radius: 4px; }

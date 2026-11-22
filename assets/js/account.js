@@ -90,6 +90,9 @@
     return 'הזיכרון שלך על המשתמש הזה (השתמש בו רק כשזה עוזר, ואל תצטט אותו סתם):\n- ' + lines.join('\n- ');
   }
 
+  // a profile photo that fails to load falls back to the letter under it
+  document.addEventListener('error', (e) => { if (e.target && e.target.matches && e.target.matches('img[data-fallback]')) e.target.remove(); }, true);
+
   /* ---------------- Firebase (loaded only when needed) ---------------- */
   let F = null;
   function fb() {
@@ -160,7 +163,7 @@
   function avatarHTML(size) {
     const n = firstName() || (me && me.guest ? 'אורח' : '');
     const letter = esc((n || '?').charAt(0));
-    if (me && me.photo) return '<span class="me-av" style="--s:' + size + 'px"><img src="' + esc(me.photo) + '" alt="" referrerpolicy="no-referrer" onerror="this.remove()"><b>' + letter + '</b></span>';
+    if (me && me.photo) return '<span class="me-av" style="--s:' + size + 'px"><img src="' + esc(me.photo) + '" alt="" referrerpolicy="no-referrer" data-fallback><b>' + letter + '</b></span>';
     return '<span class="me-av" style="--s:' + size + 'px"><b>' + letter + '</b></span>';
   }
 
